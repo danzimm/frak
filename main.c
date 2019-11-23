@@ -21,6 +21,7 @@ packed_struct(tiff) {
 enum ifd_entry_tag {
   ImageWidth = 0x0100,
   ImageLength = 0x0101,
+  BitsPerSample = 0x0102,
   Compression = 0x0103,
   PhotometricInterpretation = 0x0106,
   StripOffsets = 0x0111,
@@ -57,6 +58,7 @@ struct frak_args {
   uint32_t height;
   uint32_t ppi;
   const char* name;
+  bool gray;
 };
 
 struct img {
@@ -65,19 +67,25 @@ struct img {
 };
 
 static uint32_t compute_image_data_len(struct img* img) {
-  uint32_t wadder = ((img->args.width & 0x7) != 0) ? 1 : 0;
-  return ((img->args.width >> 3) + wadder) * img->args.height;
+  if (!img->args.gray) {
+    uint32_t wadder = ((img->args.width & 0x7) != 0) ? 1 : 0;
+    return ((img->args.width >> 3) + wadder) * img->args.height;
+  } else {
+    return img->args.width * img->args.height;
+  }
 }
 
-static uint32_t compute_resolution_off(void) { return 8 + 2 + 10 * 12 + 4; }
+static uint32_t compute_resolution_off(struct img* img) {
+  return 8 + 2 + 10 * 12 + 4 + (img->args.gray ? 12 : 0);
+}
 
-static uint32_t compute_image_data_off(void) {
-  return compute_resolution_off() + 2 * 2 * 4;
+static uint32_t compute_image_data_off(struct img* img) {
+  return compute_resolution_off(img) + 2 * 2 * 4;
 }
 
 static uint32_t compute_len(struct img* img) {
   // header, ifd header, 10 ifd entries, ifd footer, x res, y res, image data
-  return compute_image_data_off() + compute_image_data_len(img);
+  return compute_image_data_off(img) + compute_image_data_len(img);
 }
 
 static void usage(const char* cmd) __attribute__((noreturn));
@@ -92,6 +100,7 @@ static void usage(const char* cmd) {
           "--height [height] height in pixels of final image. default 256\n");
   fprintf(stderr,
           "--ppi [ppi]       pixels per inch of final image. default 401\n");
+  fprintf(stderr, "--gray            specify generate a grayscale image\n");
   exit(1);
 }
 
@@ -135,40 +144,43 @@ static void* write_short(void* buf, uint16_t x) {
 static void* write_header_and_metadata(void* buf, struct img* img) {
   void* const base = buf;
 
+  // Header, ifd header
+  buf = write_hdr(buf);
+  buf = write_short(buf, 10 + (img->args.gray ? 1 : 0));
+
+  buf = write_entry(write_entry(buf, ImageWidth, IFD_LONG, 1, img->args.width),
+                    ImageLength, IFD_LONG, 1, img->args.height);
+
+  if (img->args.gray) {
+    buf = write_entry(buf, BitsPerSample, IFD_LONG, 1, 8);
+  }
+
   buf = write_long(
       write_entry(
           write_entry(
               write_entry(
                   write_entry(
                       write_entry(
-                          write_entry(
-                              write_entry(
-                                  write_entry(
-                                      write_entry(
-                                          write_entry(
-                                              write_short(write_hdr(buf), 10),
-                                              ImageWidth, IFD_LONG, 1,
-                                              img->args.width),
-                                          ImageLength, IFD_LONG, 1,
-                                          img->args.height),
-                                      Compression, IFD_SHORT, 1, 1),
-                                  PhotometricInterpretation, IFD_SHORT, 1, 1),
-                              StripOffsets, IFD_LONG, 1,
-                              compute_image_data_off()),
+                          write_entry(write_entry(write_entry(buf, Compression,
+                                                              IFD_SHORT, 1, 1),
+                                                  PhotometricInterpretation,
+                                                  IFD_SHORT, 1, 1),
+                                      StripOffsets, IFD_LONG, 1,
+                                      compute_image_data_off(img)),
                           RowsPerStrip, IFD_LONG, 1, img->args.height),
                       StripByteCounts, IFD_LONG, 1,
                       compute_image_data_len(img)),
-                  XResolution, IFD_RATIONAL, 1, compute_resolution_off()),
-              YResolution, IFD_RATIONAL, 1, compute_resolution_off() + 8),
+                  XResolution, IFD_RATIONAL, 1, compute_resolution_off(img)),
+              YResolution, IFD_RATIONAL, 1, compute_resolution_off(img) + 8),
           ResolutionUnit, IFD_SHORT, 1, 2),
       0);
   printf("Wrote %#lx header bytes (%#x)\n", buf - base,
-         compute_resolution_off());
+         compute_resolution_off(img));
 
   buf = write_rational(write_rational(buf, img->args.width, img->args.ppi),
                        img->args.height, img->args.ppi);
   printf("Wrote %#lx header/metadata bytes (%#x)\n", buf - base,
-         compute_image_data_off());
+         compute_image_data_off(img));
   return buf;
 }
 
@@ -177,6 +189,7 @@ static void inline frak_args_init(struct frak_args* args) {
   args->height = 256;
   args->ppi = 401;
   args->name = NULL;
+  args->gray = false;
 }
 
 struct arg_spec frak_arg_specs[] = {
@@ -203,6 +216,12 @@ struct arg_spec frak_arg_specs[] = {
         .takes_arg = true,
         .parser = str_parser,
         .offset = offsetof(struct frak_args, name),
+    },
+    {
+        .flag = "--gray",
+        .takes_arg = false,
+        .parser = bool_parser,
+        .offset = offsetof(struct frak_args, gray),
     },
     {
         .flag = NULL,
