@@ -8,6 +8,8 @@
 #include <unistd.h>
 #include <zlib.h>
 
+#include "arg.h"
+
 #define packed_struct(x) struct __attribute__((packed)) x
 
 packed_struct(tiff) {
@@ -50,14 +52,20 @@ packed_struct(ifd) {
   /* uint32_t next_ifd_offset; */
 };
 
-struct img {
-  struct tiff tiff;
+struct frak_args {
   uint32_t width;
   uint32_t height;
+  uint32_t ppi;
+  const char* name;
+};
+
+struct img {
+  struct tiff tiff;
+  struct frak_args args;
 };
 
 static uint32_t compute_image_data_len(struct img* img) {
-  uint32_t total_bits = img->width * img->height;
+  uint32_t total_bits = img->args.width * img->args.height;
   uint32_t adder = (total_bits & 0x7) != 0 ? 1 : 0;
   return (total_bits >> 3) + adder;
 }
@@ -75,20 +83,17 @@ static uint32_t compute_len(struct img* img) {
 
 static void usage(const char* cmd) __attribute__((noreturn));
 static void usage(const char* cmd) {
-  fprintf(stderr, "%s [image.tiff] [width] [height]\n", cmd);
+  fprintf(stderr,
+          "%s: a tiff generator. Example usage: %s [options] name.tiff\n", cmd,
+          cmd);
+  fprintf(stderr, "options:\n");
+  fprintf(stderr,
+          "--width [width]   width in pixels of final image. default 256\n");
+  fprintf(stderr,
+          "--height [height] height in pixels of final image. default 256\n");
+  fprintf(stderr,
+          "--ppi [ppi]       pixels per inch of final image. default 401\n");
   exit(1);
-}
-
-static uint32_t get_number(const char* arg) {
-  if (*arg == '\0') {
-    return 0;
-  }
-  char* tmp;
-  unsigned long x = strtoul(arg, &tmp, 10);
-  if (*tmp != '\0' || x >= UINT32_MAX) {
-    return 0;
-  }
-  return x;
 }
 
 static void* write_hdr(void* buf) {
@@ -144,14 +149,14 @@ static void* write_header_and_metadata(void* buf, struct img* img) {
                                           write_entry(
                                               write_short(write_hdr(buf), 10),
                                               ImageWidth, IFD_LONG, 1,
-                                              img->width),
+                                              img->args.width),
                                           ImageLength, IFD_LONG, 1,
-                                          img->height),
+                                          img->args.height),
                                       Compression, IFD_SHORT, 1, 1),
                                   PhotometricInterpretation, IFD_SHORT, 1, 1),
                               StripOffsets, IFD_LONG, 1,
                               compute_image_data_off()),
-                          RowsPerStrip, IFD_LONG, 1, img->height),
+                          RowsPerStrip, IFD_LONG, 1, img->args.height),
                       StripByteCounts, IFD_LONG, 1,
                       compute_image_data_len(img)),
                   XResolution, IFD_RATIONAL, 1, compute_resolution_off()),
@@ -161,34 +166,75 @@ static void* write_header_and_metadata(void* buf, struct img* img) {
   printf("Wrote %#lx header bytes (%#x)\n", buf - base,
          compute_resolution_off());
 
-  buf = write_rational(write_rational(buf, img->width, 401), img->height, 401);
+  buf = write_rational(write_rational(buf, img->args.width, img->args.ppi),
+                       img->args.height, img->args.ppi);
   printf("Wrote %#lx header/metadata bytes (%#x)\n", buf - base,
          compute_image_data_off());
   return buf;
 }
 
-int main(int argc, const char* argv[]) {
-  if (argc < 4) {
-    usage(argv[0]);
-  }
+static void inline frak_args_init(struct frak_args* args) {
+  args->width = 256;
+  args->height = 256;
+  args->ppi = 401;
+  args->name = NULL;
+}
 
+struct arg_spec frak_arg_specs[] = {
+    {
+        .flag = "--width",
+        .takes_arg = true,
+        .parser = u32_parser,
+        .offset = offsetof(struct frak_args, width),
+    },
+    {
+        .flag = "--height",
+        .takes_arg = true,
+        .parser = u32_parser,
+        .offset = offsetof(struct frak_args, height),
+    },
+    {
+        .flag = "--ppi",
+        .takes_arg = true,
+        .parser = u32_parser,
+        .offset = offsetof(struct frak_args, ppi),
+    },
+    {
+        .flag = "name",
+        .takes_arg = true,
+        .parser = str_parser,
+        .offset = offsetof(struct frak_args, name),
+    },
+    {
+        .flag = NULL,
+        .takes_arg = 0,
+        .parser = NULL,
+        .offset = 0,
+    },
+};
+
+int main(int argc, const char* argv[]) {
   int rc = 0;
   int fd = -1;
   void* buf = NULL;
   void* data;
-  const char* name;
   struct img img;
   size_t len;
 
-  name = argv[1];
-  img.width = get_number(argv[2]);
-  img.height = get_number(argv[3]);
-  if (!img.width || !img.height) {
+  frak_args_init(&img.args);
+  char* err = parse_args(argc - 1, argv + 1, frak_arg_specs, &img.args);
+  if (err) {
+    fprintf(stderr, "%s", err);
+    free(err);
+    goto out;
+  }
+
+  if (!img.args.width || !img.args.height || !img.args.name) {
     usage(argv[0]);
   }
   len = compute_len(&img);
 
-  fd = open(name, O_RDWR | O_CREAT | O_TRUNC, 0644);
+  fd = open(img.args.name, O_RDWR | O_CREAT | O_TRUNC, 0644);
   if (fd < 0) {
     perror("open");
     rc = 1;
@@ -218,7 +264,7 @@ out:
     close(fd);
   }
   if (rc != 0) {
-    unlink(name);
+    unlink(img.args.name);
   }
   return rc;
 }
