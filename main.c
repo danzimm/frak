@@ -65,9 +65,8 @@ struct img {
 };
 
 static uint32_t compute_image_data_len(struct img* img) {
-  uint32_t total_bits = img->args.width * img->args.height;
-  uint32_t adder = (total_bits & 0x7) != 0 ? 1 : 0;
-  return (total_bits >> 3) + adder;
+  uint32_t wadder = ((img->args.width & 0x7) != 0) ? 1 : 0;
+  return ((img->args.width >> 3) + wadder) * img->args.height;
 }
 
 static uint32_t compute_resolution_off(void) { return 8 + 2 + 10 * 12 + 4; }
