@@ -177,8 +177,7 @@ static void* write_header_and_metadata(void* buf, struct img* img) {
   printf("Wrote %#lx header bytes (%#x)\n", buf - base,
          compute_resolution_off(img));
 
-  buf = write_rational(write_rational(buf, img->args.width, img->args.ppi),
-                       img->args.height, img->args.ppi);
+  buf = write_rational(write_rational(buf, img->args.ppi, 1), img->args.ppi, 1);
   printf("Wrote %#lx header/metadata bytes (%#x)\n", buf - base,
          compute_image_data_off(img));
   return buf;
