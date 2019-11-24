@@ -8,7 +8,7 @@
 #include <unistd.h>
 #include <zlib.h>
 
-#include "args.h"
+#include "frak_args.h"
 
 #define packed_struct(x) struct __attribute__((packed)) x
 
@@ -53,14 +53,6 @@ packed_struct(ifd) {
   /* uint32_t next_ifd_offset; */
 };
 
-struct frak_args {
-  uint32_t width;
-  uint32_t height;
-  uint32_t ppi;
-  const char* name;
-  bool gray;
-};
-
 struct img {
   struct tiff tiff;
   struct frak_args args;
@@ -86,22 +78,6 @@ static uint32_t compute_image_data_off(struct img* img) {
 static uint32_t compute_len(struct img* img) {
   // header, ifd header, 10 ifd entries, ifd footer, x res, y res, image data
   return compute_image_data_off(img) + compute_image_data_len(img);
-}
-
-static void usage(const char* cmd) __attribute__((noreturn));
-static void usage(const char* cmd) {
-  fprintf(stderr,
-          "%s: a tiff generator. Example usage: %s [options] name.tiff\n", cmd,
-          cmd);
-  fprintf(stderr, "options:\n");
-  fprintf(stderr,
-          "--width [width]   width in pixels of final image. default 256\n");
-  fprintf(stderr,
-          "--height [height] height in pixels of final image. default 256\n");
-  fprintf(stderr,
-          "--ppi [ppi]       pixels per inch of final image. default 401\n");
-  fprintf(stderr, "--gray            specify generate a grayscale image\n");
-  exit(1);
 }
 
 static void* write_hdr(void* buf) {
@@ -183,53 +159,6 @@ static void* write_header_and_metadata(void* buf, struct img* img) {
   return buf;
 }
 
-static void inline frak_args_init(struct frak_args* args) {
-  args->width = 256;
-  args->height = 256;
-  args->ppi = 401;
-  args->name = NULL;
-  args->gray = false;
-}
-
-struct arg_spec frak_arg_specs[] = {
-    {
-        .flag = "--width",
-        .takes_arg = true,
-        .parser = u32_parser,
-        .offset = offsetof(struct frak_args, width),
-    },
-    {
-        .flag = "--height",
-        .takes_arg = true,
-        .parser = u32_parser,
-        .offset = offsetof(struct frak_args, height),
-    },
-    {
-        .flag = "--ppi",
-        .takes_arg = true,
-        .parser = u32_parser,
-        .offset = offsetof(struct frak_args, ppi),
-    },
-    {
-        .flag = "name",
-        .takes_arg = true,
-        .parser = str_parser,
-        .offset = offsetof(struct frak_args, name),
-    },
-    {
-        .flag = "--gray",
-        .takes_arg = false,
-        .parser = bool_parser,
-        .offset = offsetof(struct frak_args, gray),
-    },
-    {
-        .flag = NULL,
-        .takes_arg = 0,
-        .parser = NULL,
-        .offset = 0,
-    },
-};
-
 int main(int argc, const char* argv[]) {
   int rc = 0;
   int fd = -1;
@@ -247,7 +176,7 @@ int main(int argc, const char* argv[]) {
   }
 
   if (!img.args.width || !img.args.height || !img.args.name) {
-    usage(argv[0]);
+    usage();
   }
   len = compute_len(&img);
 
