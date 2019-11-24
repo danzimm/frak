@@ -8,7 +8,7 @@
 #include <unistd.h>
 #include <zlib.h>
 
-#include "arg.h"
+#include "args.h"
 
 #define packed_struct(x) struct __attribute__((packed)) x
 

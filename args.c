@@ -1,6 +1,6 @@
 // Copywrite (c) 2019 Dan Zimmerman
 
-#include "arg.h"
+#include "args.h"
 
 #include <stdio.h>
 #include <string.h>
