@@ -6,7 +6,7 @@
 #include <stdio.h>
 #include <string.h>
 
-const char* u32_parser(const char* arg, void* slot) {
+const char* pu32_parser(const char* arg, void* slot) {
   if (*arg == '\0') {
     return "unexpected empty string";
   }
@@ -16,7 +16,10 @@ const char* u32_parser(const char* arg, void* slot) {
     return "expected number";
   }
   if (x >= UINT32_MAX) {
-    return "number to large";
+    return "too large";
+  }
+  if (x == 0) {
+    return "can't be 0";
   }
   *(uint32_t*)slot = (uint32_t)x;
   return NULL;

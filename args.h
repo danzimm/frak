@@ -17,7 +17,7 @@ struct arg_spec {
   const char* help;
 };
 
-const char* u32_parser(const char* arg, void* slot);
+const char* pu32_parser(const char* arg, void* slot);
 const char* bool_parser(const char* arg, void* slot);
 const char* str_parser(const char* arg, void* slot);
 

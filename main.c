@@ -36,9 +36,6 @@ int main(int argc, const char* argv[]) {
     frak_usage();
   }
 
-  if (!args.width || !args.height || !args.name) {
-    frak_usage();
-  }
   tiff_spec_init_from_frak_args(&spec, &args);
   len = tiff_spec_compute_file_size(&spec);
 
