@@ -22,6 +22,7 @@ enum ifd_entry_tag {
   XResolution = 0x011A,
   YResolution = 0x011B,
   ResolutionUnit = 0x0128,
+  ColorMap = 0x0140,
 };
 
 enum ifd_entry_type {
@@ -55,11 +56,20 @@ static uint32_t compute_image_data_len(tiff_spec_t spec) {
 }
 
 static uint32_t compute_resolution_off(tiff_spec_t spec) {
-  return 8 + 2 + 10 * 12 + 4 + (spec->type != tiff_bilevel ? 12 : 0);
+  return 8 + 2 + 10 * 12 + 4 + (spec->type != tiff_bilevel ? 12 : 0) +
+         (spec->type == tiff_palette ? 12 : 0);
+}
+
+static uint32_t compute_palette_off(tiff_spec_t spec) {
+  return compute_resolution_off(spec) + 2 * 2 * 4;
 }
 
 static uint32_t compute_image_data_off(tiff_spec_t spec) {
-  return compute_resolution_off(spec) + 2 * 2 * 4;
+  uint32_t res = compute_palette_off(spec);
+  if (spec->type == tiff_palette) {
+    res += 3 * 256 * sizeof(uint16_t);
+  }
+  return res;
 }
 
 uint32_t tiff_spec_compute_file_size(tiff_spec_t spec) {
@@ -103,10 +113,39 @@ static void* write_short(void* buf, uint16_t x) {
   return xx;
 }
 
+static uint16_t compute_pmi(tiff_spec_t spec) {
+  if (spec->type == tiff_palette) {
+    return 3;
+  }
+  return 1;
+}
+
+static void* write_palette(void* buf, tiff_palette_t palette) {
+  uint16_t* colors = buf;
+  for (unsigned i = 0; i < 256; i++) {
+    struct tiff_palette_color* color = &palette->colors[i];
+    colors[i] = color->red;
+    colors[256 + i] = color->green;
+    colors[512 + i] = color->blue;
+  }
+  return (void*)(colors + 3 * 256);
+}
+
+static uint16_t compute_ifd_count(tiff_spec_t spec) {
+  uint16_t res = 10;
+  if (spec->type != tiff_bilevel) {
+    res += 1;
+    if (spec->type == tiff_palette) {
+      res += 1;
+    }
+  }
+  return res;
+}
+
 void* tiff_spec_write_metadata(tiff_spec_t spec, void* buf) {
   // Header, ifd header
   buf = write_hdr(buf);
-  buf = write_short(buf, 10 + (spec->type != tiff_bilevel ? 1 : 0));
+  buf = write_short(buf, compute_ifd_count(spec));
 
   buf = write_entry(write_entry(buf, ImageWidth, IFD_LONG, 1, spec->width),
                     ImageLength, IFD_LONG, 1, spec->height);
@@ -115,25 +154,34 @@ void* tiff_spec_write_metadata(tiff_spec_t spec, void* buf) {
     buf = write_entry(buf, BitsPerSample, IFD_LONG, 1, 8);
   }
 
-  buf = write_long(
+  buf = write_entry(
       write_entry(
           write_entry(
               write_entry(
                   write_entry(
-                      write_entry(
-                          write_entry(write_entry(write_entry(buf, Compression,
-                                                              IFD_SHORT, 1, 1),
-                                                  PhotometricInterpretation,
-                                                  IFD_SHORT, 1, 1),
-                                      StripOffsets, IFD_LONG, 1,
-                                      compute_image_data_off(spec)),
-                          RowsPerStrip, IFD_LONG, 1, spec->height),
-                      StripByteCounts, IFD_LONG, 1,
-                      compute_image_data_len(spec)),
-                  XResolution, IFD_RATIONAL, 1, compute_resolution_off(spec)),
-              YResolution, IFD_RATIONAL, 1, compute_resolution_off(spec) + 8),
-          ResolutionUnit, IFD_SHORT, 1, 2),
-      0);
+                      write_entry(write_entry(write_entry(buf, Compression,
+                                                          IFD_SHORT, 1, 1),
+                                              PhotometricInterpretation,
+                                              IFD_SHORT, 1, compute_pmi(spec)),
+                                  StripOffsets, IFD_LONG, 1,
+                                  compute_image_data_off(spec)),
+                      RowsPerStrip, IFD_LONG, 1, spec->height),
+                  StripByteCounts, IFD_LONG, 1, compute_image_data_len(spec)),
+              XResolution, IFD_RATIONAL, 1, compute_resolution_off(spec)),
+          YResolution, IFD_RATIONAL, 1, compute_resolution_off(spec) + 8),
+      ResolutionUnit, IFD_SHORT, 1, 2);
+
+  if (spec->type == tiff_palette) {
+    buf = write_entry(buf, ColorMap, IFD_SHORT, spec->palette->len,
+                      compute_palette_off(spec));
+  }
+
+  buf = write_long(buf, 0);
   buf = write_rational(write_rational(buf, spec->ppi, 1), spec->ppi, 1);
+
+  if (spec->type == tiff_palette) {
+    buf = write_palette(buf, spec->palette);
+  }
+
   return buf;
 }

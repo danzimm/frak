@@ -16,7 +16,19 @@ static inline void tiff_spec_init_from_frak_args(tiff_spec_t spec,
   spec->width = args->width;
   spec->height = args->height;
   spec->ppi = args->ppi;
-  spec->type = args->gray ? tiff_gray : tiff_bilevel;
+  if (args->color) {
+    spec->type = tiff_palette;
+    unsigned colors_byte_len = sizeof(uint16_t) * 3 * 256;
+    spec->palette = malloc(sizeof(struct tiff_palette) + colors_byte_len);
+    spec->palette->len = 3 * 256;
+    arc4random_buf((void*)spec->palette->colors, colors_byte_len);
+  } else if (args->gray) {
+    spec->type = tiff_gray;
+    spec->palette = NULL;
+  } else {
+    spec->type = tiff_bilevel;
+    spec->palette = NULL;
+  }
 }
 
 int main(int argc, const char* argv[]) {
@@ -70,6 +82,9 @@ out:
   }
   if (rc != 0) {
     unlink(args.name);
+  }
+  if (spec.palette) {
+    free(spec.palette);
   }
   return rc;
 }
