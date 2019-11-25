@@ -47,10 +47,8 @@ static unsigned get_specs_len(struct arg_spec const* const specs) {
 }
 
 char* parse_args(int argc, const char* argv[],
-                 struct arg_spec const* const specs,
-                 void (*initializer)(void*),
-                 char*(*validator)(void*),
-                 void* ctx) {
+                 struct arg_spec const* const specs, void (*initializer)(void*),
+                 char* (*validator)(void*), void* ctx) {
   initializer(ctx);
   char* err = NULL;
   bool* did_parse = NULL;

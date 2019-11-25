@@ -19,6 +19,8 @@ void frak_usage(void) __attribute__((noreturn));
 void frak_args_init(frak_args_t args);
 char* frak_args_validate(frak_args_t args);
 
-static inline char* parse_frak_args(frak_args_t args, int argc, const char* argv[]) {
-  return parse_args(argc - 1, argv + 1, frak_arg_specs, (void*)frak_args_init, (void*)frak_args_validate, (void*)args);
+static inline char* parse_frak_args(frak_args_t args, int argc,
+                                    const char* argv[]) {
+  return parse_args(argc - 1, argv + 1, frak_arg_specs, (void*)frak_args_init,
+                    (void*)frak_args_validate, (void*)args);
 }
