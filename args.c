@@ -49,6 +49,9 @@ char* parse_args(int argc, const char* argv[],
   char* err = NULL;
   bool found;
 
+  if (iter == end) {
+    goto out;
+  }
   do {
     found = false;
     spec_iter = &specs[0];
