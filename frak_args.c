@@ -59,7 +59,16 @@ struct arg_spec const* const frak_arg_specs = (struct arg_spec[]){
     {.flag = NULL, .takes_arg = 0, .parser = NULL, .offset = 0, .help = NULL},
 };
 
-char* frak_args_validate(struct frak_args* args) {
+void frak_args_init(frak_args_t args) {
+  args->width = 256;
+  args->height = 256;
+  args->ppi = 401;
+  args->name = NULL;
+  args->gray = false;
+  args->color = false;
+}
+
+char* frak_args_validate(frak_args_t args) {
   if (args->color && args->gray) {
     return strdup("Error: --color & --gray cannot both be supplied");
   }

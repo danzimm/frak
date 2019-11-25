@@ -47,17 +47,23 @@ static unsigned get_specs_len(struct arg_spec const* const specs) {
 }
 
 char* parse_args(int argc, const char* argv[],
-                 struct arg_spec const* const specs, void* ctx) {
+                 struct arg_spec const* const specs,
+                 void (*initializer)(void*),
+                 char*(*validator)(void*),
+                 void* ctx) {
+  initializer(ctx);
+  char* err = NULL;
+  bool* did_parse = NULL;
   if (specs == NULL || specs->flag == NULL) {
-    return NULL;
+    goto out;
   }
+
   const char** iter = &argv[0];
   const char** end = iter + argc;
-  bool* did_parse = calloc(get_specs_len(specs), sizeof(bool));
-
   struct arg_spec const* spec_iter;
-  char* err = NULL;
   bool found;
+
+  did_parse = calloc(get_specs_len(specs), sizeof(bool));
 
   if (iter == end) {
     goto check_required;
@@ -113,8 +119,10 @@ check_required:
   } while ((++spec_iter)->flag != NULL);
 
 out:
-  free(did_parse);
-  return err;
+  if (did_parse) {
+    free(did_parse);
+  }
+  return err ?: validator(ctx);
 }
 
 static const char* skip_dash(const char* str) {
