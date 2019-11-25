@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.8.1)
 project(frak VERSION 0.1)
 
 
-set(FRAK_SRC main.c args.c frak_args.c)
+set(FRAK_SRC main.c args.c frak_args.c tiff.c)
 set(FRAK_CFLAGS -Wall -Werror -Wextra)
 
 add_executable(frak ${FRAK_SRC})
