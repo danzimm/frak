@@ -6,7 +6,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-void usage() {
+void frak_usage() {
   static char const* const cmd = "frak";
   char* usage = create_usage(cmd, "a tiff generator", frak_arg_specs);
   fprintf(stderr, "%s", usage);

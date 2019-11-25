@@ -33,11 +33,11 @@ int main(int argc, const char* argv[]) {
   if (err) {
     fprintf(stderr, "%s\n\n", err);
     free(err);
-    usage();
+    frak_usage();
   }
 
   if (!args.width || !args.height || !args.name) {
-    usage();
+    frak_usage();
   }
   tiff_spec_init_from_frak_args(&spec, &args);
   len = tiff_spec_compute_file_size(&spec);

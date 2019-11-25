@@ -21,4 +21,4 @@ static void inline frak_args_init(struct frak_args* args) {
 }
 extern struct arg_spec const* const frak_arg_specs;
 
-void usage(void) __attribute__((noreturn));
+void frak_usage(void) __attribute__((noreturn));
