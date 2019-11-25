@@ -96,6 +96,11 @@ out:
   return err;
 }
 
+static const char* skip_dash(const char* str) {
+  while (*str == '-' && *str != '\0') str++;
+  return str;
+}
+
 static unsigned get_max_option_width(struct arg_spec const* const specs) {
   unsigned width = 0;
   if (!specs || !specs->flag) {
@@ -105,9 +110,7 @@ static unsigned get_max_option_width(struct arg_spec const* const specs) {
   do {
     unsigned w;
     if (*iter->flag == '-') {
-      const char* fiter = iter->flag;
-      while (*fiter == '-' && *fiter != '\0') fiter++;
-      w = strlen(iter->flag) + strlen(fiter) + 3;
+      w = strlen(iter->flag) + strlen(skip_dash(iter->flag)) + 3;
     } else {
       w = strlen(iter->flag) + 2;
     }
@@ -200,9 +203,8 @@ char* create_usage(const char* cmd, const char* description,
   do {
     // Print the flag
     if (*iter->flag == '-') {
-      const char* fiter = iter->flag;
-      while (*fiter == '-' && *fiter != '\0') fiter++;
-      asprintf_padded(&tmp, arg_width, "%s [%s]", iter->flag, fiter);
+      asprintf_padded(&tmp, arg_width, "%s [%s]", iter->flag,
+                      skip_dash(iter->flag));
     } else {
       asprintf_padded(&tmp, arg_width, "[%s]", iter->flag);
     }
