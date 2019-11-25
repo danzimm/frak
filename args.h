@@ -11,6 +11,7 @@ typedef const char* (*arg_parser_t)(const char* arg, void* slot);
 struct arg_spec {
   const char* flag;
   bool takes_arg;
+  bool required;
   arg_parser_t parser;
   size_t offset;
   const char* help;

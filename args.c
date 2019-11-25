@@ -37,6 +37,12 @@ const char* str_parser(const char* arg, void* slot) {
   return NULL;
 }
 
+static unsigned get_specs_len(struct arg_spec const* const specs) {
+  struct arg_spec const* iter = specs;
+  while (iter && iter->flag) iter++;
+  return iter - specs;
+}
+
 char* parse_args(int argc, const char* argv[],
                  struct arg_spec const* const specs, void* ctx) {
   if (specs == NULL || specs->flag == NULL) {
@@ -44,13 +50,14 @@ char* parse_args(int argc, const char* argv[],
   }
   const char** iter = &argv[0];
   const char** end = iter + argc;
+  bool* did_parse = calloc(get_specs_len(specs), sizeof(bool));
 
   struct arg_spec const* spec_iter;
   char* err = NULL;
   bool found;
 
   if (iter == end) {
-    goto out;
+    goto check_required;
   }
   do {
     found = false;
@@ -77,6 +84,7 @@ char* parse_args(int argc, const char* argv[],
         continue;
       }
       found = true;
+      did_parse[spec_iter - specs] = true;
 
       const char* spec_err = spec_iter->parser(arg, ctx + spec_iter->offset);
       if (spec_err) {
@@ -92,7 +100,17 @@ char* parse_args(int argc, const char* argv[],
     }
   } while ((++iter) != end);
 
+check_required:
+  spec_iter = specs;
+  do {
+    if (spec_iter->required && !did_parse[spec_iter - specs]) {
+      asprintf(&err, "Missing required arg: %s", spec_iter->flag);
+      goto out;
+    }
+  } while ((++spec_iter)->flag != NULL);
+
 out:
+  free(did_parse);
   return err;
 }
 
@@ -172,6 +190,20 @@ out:
   *str += out_len + space;
 }
 
+char* compute_requireds_str(struct arg_spec const* const specs) {
+  char* result = strdup("");
+  struct arg_spec const* iter = specs;
+  do {
+    if (iter->required) {
+      result = strconcat(strconcat(result, " "), iter->flag);
+      if (*iter->flag == '-') {
+        result = strconcat(strconcat(result, " "), skip_dash(iter->flag));
+      }
+    }
+  } while ((++iter)->flag != NULL);
+  return result;
+}
+
 char* create_usage(const char* cmd, const char* description,
                    struct arg_spec const* const specs) {
   char* prologue = NULL;
@@ -180,6 +212,7 @@ char* create_usage(const char* cmd, const char* description,
   const char* ctmp = NULL;
   char* result = NULL;
   char* summary = NULL;
+  char* requireds = NULL;
   char* flag_padding = NULL;
   struct arg_spec const* iter;
   unsigned arg_width;
@@ -197,7 +230,10 @@ char* create_usage(const char* cmd, const char* description,
   summary = malloc(summary_width + 2);
 
   // Prologue
-  asprintf(&prologue, "%s: %s. Usage: %s [options]\n", cmd, description, cmd);
+  requireds = compute_requireds_str(specs);
+  asprintf(&prologue, "%s: %s.\nUsage: %s [options]%s\n", cmd, description, cmd,
+           requireds);
+  free(requireds);
 
   // Options
   do {
