@@ -10,6 +10,7 @@ struct frak_args {
   uint32_t ppi;
   const char* name;
   bool gray;
+  bool color;
 };
 
 static void inline frak_args_init(struct frak_args* args) {
@@ -18,7 +19,9 @@ static void inline frak_args_init(struct frak_args* args) {
   args->ppi = 401;
   args->name = NULL;
   args->gray = false;
+  args->color = false;
 }
 extern struct arg_spec const* const frak_arg_specs;
 
 void frak_usage(void) __attribute__((noreturn));
+char* frak_args_validate(struct frak_args* args);

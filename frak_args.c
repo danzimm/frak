@@ -5,6 +5,7 @@
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 void frak_usage() {
   static char const* const cmd = "frak";
@@ -46,6 +47,21 @@ struct arg_spec const* const frak_arg_specs = (struct arg_spec[]){
      .required = false,
      .parser = bool_parser,
      .offset = offsetof(struct frak_args, gray),
-     .help = "Generate gray noise instead of black & white"},
+     .help = "Generate gray noise instead of black & white. Cannot be used"
+             " with --color"},
+    {.flag = "--color",
+     .takes_arg = false,
+     .required = false,
+     .parser = bool_parser,
+     .offset = offsetof(struct frak_args, color),
+     .help = "Generate color noise instead of black & white. Cannot be used"
+             " with --gray"},
     {.flag = NULL, .takes_arg = 0, .parser = NULL, .offset = 0, .help = NULL},
 };
+
+char* frak_args_validate(struct frak_args* args) {
+  if (args->color && args->gray) {
+    return strdup("Error: --color & --gray cannot both be supplied");
+  }
+  return NULL;
+}

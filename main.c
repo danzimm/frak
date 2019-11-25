@@ -29,7 +29,8 @@ int main(int argc, const char* argv[]) {
   size_t len;
 
   frak_args_init(&args);
-  char* err = parse_args(argc - 1, argv + 1, frak_arg_specs, &args);
+  char* err = parse_args(argc - 1, argv + 1, frak_arg_specs, &args)
+                  ?: frak_args_validate(&args);
   if (err) {
     fprintf(stderr, "%s\n\n", err);
     free(err);
