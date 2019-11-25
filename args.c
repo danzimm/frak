@@ -217,6 +217,7 @@ char* create_usage(const char* cmd, const char* description,
   struct arg_spec const* iter;
   unsigned arg_width;
   unsigned summary_width;
+  bool print_required = true;
 
   if (!specs || !specs->flag) {
     return NULL;
@@ -233,11 +234,21 @@ char* create_usage(const char* cmd, const char* description,
   requireds = compute_requireds_str(specs);
   asprintf(&prologue, "%s: %s.\nUsage: %s [options]%s\n", cmd, description, cmd,
            requireds);
+  bool has_requireds = *requireds != '\0';
   free(requireds);
+  if (has_requireds) {
+    args = strconcat(args, "Required:\n");
+  } else {
+    goto print_nonrequired;
+  }
 
   // Options
+print_opts:
   do {
     // Print the flag
+    if (print_required ^ iter->required) {
+      continue;
+    }
     if (*iter->flag == '-') {
       asprintf_padded(&tmp, arg_width, "%s [%s]", iter->flag,
                       skip_dash(iter->flag));
@@ -260,7 +271,15 @@ char* create_usage(const char* cmd, const char* description,
     }
   } while ((++iter)->flag != NULL);
 
-  asprintf(&result, "%s\nOptions:\n%s", prologue, args);
+print_nonrequired:
+  if (print_required) {
+    print_required = false;
+    iter = specs;
+    args = strconcat(args, "Options:\n");
+    goto print_opts;
+  }
+
+  asprintf(&result, "%s\n%s", prologue, args);
   free(prologue);
   free(args);
   free(summary);
