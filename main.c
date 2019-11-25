@@ -170,9 +170,9 @@ int main(int argc, const char* argv[]) {
   frak_args_init(&img.args);
   char* err = parse_args(argc - 1, argv + 1, frak_arg_specs, &img.args);
   if (err) {
-    fprintf(stderr, "%s", err);
+    fprintf(stderr, "%s\n\n", err);
     free(err);
-    goto out;
+    usage();
   }
 
   if (!img.args.width || !img.args.height || !img.args.name) {

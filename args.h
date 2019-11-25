@@ -22,3 +22,6 @@ const char* str_parser(const char* arg, void* slot);
 
 char* parse_args(int argc, const char* argv[],
                  struct arg_spec const* const specs, void* ctx);
+
+char* create_usage(const char* cmd, const char* description,
+                   struct arg_spec const* const specs);

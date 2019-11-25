@@ -8,55 +8,39 @@
 
 void usage() {
   static char const* const cmd = "frak";
-  fprintf(stderr,
-          "%s: a tiff generator. Example usage: %s [options] name.tiff\n", cmd,
-          cmd);
-  fprintf(stderr, "options:\n");
-  fprintf(stderr,
-          "--width [width]   width in pixels of final image. default 256\n");
-  fprintf(stderr,
-          "--height [height] height in pixels of final image. default 256\n");
-  fprintf(stderr,
-          "--ppi [ppi]       pixels per inch of final image. default 401\n");
-  fprintf(stderr, "--gray            specify generate a grayscale image\n");
+  char* usage = create_usage(cmd, "a tiff generator", frak_arg_specs);
+  fprintf(stderr, "%s", usage);
+  free(usage);
   exit(1);
 }
 
 struct arg_spec const* const frak_arg_specs = (struct arg_spec[]){
-    {
-        .flag = "--width",
-        .takes_arg = true,
-        .parser = u32_parser,
-        .offset = offsetof(struct frak_args, width),
-    },
-    {
-        .flag = "--height",
-        .takes_arg = true,
-        .parser = u32_parser,
-        .offset = offsetof(struct frak_args, height),
-    },
-    {
-        .flag = "--ppi",
-        .takes_arg = true,
-        .parser = u32_parser,
-        .offset = offsetof(struct frak_args, ppi),
-    },
-    {
-        .flag = "name",
-        .takes_arg = true,
-        .parser = str_parser,
-        .offset = offsetof(struct frak_args, name),
-    },
-    {
-        .flag = "--gray",
-        .takes_arg = false,
-        .parser = bool_parser,
-        .offset = offsetof(struct frak_args, gray),
-    },
-    {
-        .flag = NULL,
-        .takes_arg = 0,
-        .parser = NULL,
-        .offset = 0,
-    },
+    {.flag = "--width",
+     .takes_arg = true,
+     .parser = u32_parser,
+     .offset = offsetof(struct frak_args, width),
+     .help = "Width of result in pixels"},
+    {.flag = "--height",
+     .takes_arg = true,
+     .parser = u32_parser,
+     .offset = offsetof(struct frak_args, height),
+     .help = "Height of result in pixels"},
+    {.flag = "--ppi",
+     .takes_arg = true,
+     .parser = u32_parser,
+     .offset = offsetof(struct frak_args, ppi),
+     .help = "Pixels per inch of result"},
+    {.flag = "name",
+     .takes_arg = true,
+     .parser = str_parser,
+     .offset = offsetof(struct frak_args, name),
+     .help = "Path to the file the result should be written to. Note .tiff"
+             " will not automatically be appended, but tiff data will be"
+             " written"},
+    {.flag = "--gray",
+     .takes_arg = false,
+     .parser = bool_parser,
+     .offset = offsetof(struct frak_args, gray),
+     .help = "Generate gray noise instead of black & white"},
+    {.flag = NULL, .takes_arg = 0, .parser = NULL, .offset = 0, .help = NULL},
 };
