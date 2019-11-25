@@ -242,7 +242,7 @@ char* create_usage(const char* cmd, const char* description,
       asprintf_padded(&tmp, arg_width, "%s [%s]", iter->flag,
                       skip_dash(iter->flag));
     } else {
-      asprintf_padded(&tmp, arg_width, "[%s]", iter->flag);
+      asprintf_padded(&tmp, arg_width, "%s", iter->flag);
     }
     args = strconcat(args, tmp);
     free(tmp);
