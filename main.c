@@ -36,7 +36,7 @@ static uint8_t compute_mandlebrot_pixel(double x, double y) {
     magsq = zx * zx + zy * zy;
     result += 1;
   }
-  return result;
+  return (256 * result) / max_iteration;
 }
 
 static void mandlebrot_generator(struct frak_args const* const args,
