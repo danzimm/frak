@@ -6,7 +6,8 @@
 #include <stdio.h>
 #include <string.h>
 
-const char* pu32_parser(const char* arg, void* slot) {
+const char* pu32_parser(const char* arg, void* slot, void* ctx) {
+  (void)ctx;
   if (*arg == '\0') {
     return "unexpected empty string";
   }
@@ -25,14 +26,16 @@ const char* pu32_parser(const char* arg, void* slot) {
   return NULL;
 }
 
-const char* bool_parser(const char* arg, void* slot) {
+const char* bool_parser(const char* arg, void* slot, void* ctx) {
+  (void)ctx;
   if (arg) {
     return "unexpected argument";
   }
   *(bool*)slot = true;
   return NULL;
 }
-const char* str_parser(const char* arg, void* slot) {
+const char* str_parser(const char* arg, void* slot, void* ctx) {
+  (void)ctx;
   if (!arg) {
     return "expected argument";
   }
@@ -93,7 +96,8 @@ char* parse_args(int argc, const char* argv[],
       found = true;
       did_parse[spec_iter - specs] = true;
 
-      const char* spec_err = spec_iter->parser(arg, ctx + spec_iter->offset);
+      const char* spec_err = spec_iter->parser(arg, ctx + spec_iter->offset,
+                                               spec_iter->parser_ctx);
       if (spec_err) {
         asprintf(&err, "Unable to parse '%s%s%s': %s", spec_iter->flag,
                  arg ? " " : "", arg ?: "", spec_err);
