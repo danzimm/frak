@@ -26,6 +26,7 @@ static struct arg_enum_opt palette_enum_opts[] = {
     {.option = "c", .value = frak_palette_color},
     {.option = "color", .value = frak_palette_color},
     {.option = "colour", .value = frak_palette_color},
+    {.option = "blue", .value = frak_palette_blue},
     {.option = NULL, .value = 0},
 };
 

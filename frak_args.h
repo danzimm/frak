@@ -8,6 +8,7 @@ enum frak_palette {
   frak_palette_black_and_white = 0,
   frak_palette_gray = 1,
   frak_palette_color = 2,
+  frak_palette_blue = 3,
 };
 
 enum frak_design {

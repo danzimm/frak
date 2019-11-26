@@ -54,18 +54,60 @@ static void mandlebrot_generator(struct frak_args const* const args,
   }
 }
 
+static void fill_color_palette(struct tiff_palette_color* colors, unsigned len,
+                               struct tiff_palette_color* from,
+                               struct tiff_palette_color* to) {
+  if (!len) {
+    return;
+  }
+
+  double r = (double)from->red;
+  double g = (double)from->green;
+  double b = (double)from->blue;
+
+  double rstep = ((double)to->red - r) / (double)len;
+  double gstep = ((double)to->green - g) / (double)len;
+  double bstep = ((double)to->blue - b) / (double)len;
+
+  struct tiff_palette_color* iter = colors;
+  struct tiff_palette_color* const end = colors + len;
+  do {
+    iter->red = (uint16_t)r;
+    iter->green = (uint16_t)g;
+    iter->blue = (uint16_t)b;
+    r += rstep;
+    g += gstep;
+    b += bstep;
+  } while ((++iter) != end);
+}
+
 static inline void tiff_spec_init_from_frak_args(tiff_spec_t spec,
                                                  struct frak_args* args) {
   spec->width = args->width;
   spec->height = args->height;
   spec->ppi = args->ppi;
   switch (args->palette) {
-    case frak_palette_color: {
+    case frak_palette_color:
+    case frak_palette_blue: {
       spec->type = tiff_palette;
       unsigned colors_byte_len = sizeof(uint16_t) * 3 * 256;
       spec->palette = malloc(sizeof(struct tiff_palette) + colors_byte_len);
       spec->palette->len = 3 * 256;
-      arc4random_buf((void*)spec->palette->colors, colors_byte_len);
+      if (args->palette == frak_palette_color) {
+        arc4random_buf((void*)spec->palette->colors, colors_byte_len);
+      } else {
+        static struct tiff_palette_color from = {
+            .red = 256 * 0,
+            .green = 256 * 0,
+            .blue = 256 * 0,
+        };
+        static struct tiff_palette_color to = {
+            .red = 256 * 0,
+            .green = 256 * 97,
+            .blue = 256 * 255,
+        };
+        fill_color_palette(spec->palette->colors, 256, &from, &to);
+      }
     } break;
     case frak_palette_gray:
       spec->type = tiff_gray;
