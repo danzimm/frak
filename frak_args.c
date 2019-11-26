@@ -15,6 +15,20 @@ void frak_usage() {
   exit(1);
 }
 
+static struct parser_enum_opt palette_enum_opts[] = {
+    {.option = "b", .value = frak_palette_black_and_white},
+    {.option = "bw", .value = frak_palette_black_and_white},
+    {.option = "bilevel", .value = frak_palette_black_and_white},
+    {.option = "blackwhite", .value = frak_palette_black_and_white},
+    {.option = "g", .value = frak_palette_gray},
+    {.option = "gray", .value = frak_palette_gray},
+    {.option = "grey", .value = frak_palette_gray},
+    {.option = "c", .value = frak_palette_color},
+    {.option = "color", .value = frak_palette_color},
+    {.option = "colour", .value = frak_palette_color},
+    {.option = NULL, .value = 0},
+};
+
 struct arg_spec const* const frak_arg_specs = (struct arg_spec[]){
     {.flag = "--width",
      .takes_arg = true,
@@ -46,22 +60,13 @@ struct arg_spec const* const frak_arg_specs = (struct arg_spec[]){
      .help = "Path to the file the result should be written to. Note .tiff"
              " will not automatically be appended, but tiff data will be"
              " written"},
-    {.flag = "--gray",
-     .takes_arg = false,
+    {.flag = "--palette",
+     .takes_arg = true,
      .required = false,
-     .parser = bool_parser,
-     .parser_ctx = NULL,
-     .offset = offsetof(struct frak_args, gray),
-     .help = "Generate gray noise instead of black & white. Cannot be used"
-             " with --color"},
-    {.flag = "--color",
-     .takes_arg = false,
-     .required = false,
-     .parser = bool_parser,
-     .parser_ctx = NULL,
-     .offset = offsetof(struct frak_args, color),
-     .help = "Generate color noise instead of black & white. Cannot be used"
-             " with --gray"},
+     .parser = enum_parser,
+     .parser_ctx = (void*)palette_enum_opts,
+     .offset = offsetof(struct frak_args, palette),
+     .help = "Specify the color palette to use when generating the image"},
     {.flag = NULL,
      .takes_arg = 0,
      .parser = NULL,
@@ -75,13 +80,10 @@ void frak_args_init(frak_args_t args) {
   args->height = 256;
   args->ppi = 401;
   args->name = NULL;
-  args->gray = false;
-  args->color = false;
+  args->palette = 0;
 }
 
 char* frak_args_validate(frak_args_t args) {
-  if (args->color && args->gray) {
-    return strdup("Error: --color & --gray cannot both be supplied");
-  }
+  (void)args;
   return NULL;
 }

@@ -34,6 +34,7 @@ const char* bool_parser(const char* arg, void* slot, void* ctx) {
   *(bool*)slot = true;
   return NULL;
 }
+
 const char* str_parser(const char* arg, void* slot, void* ctx) {
   (void)ctx;
   if (!arg) {
@@ -41,6 +42,20 @@ const char* str_parser(const char* arg, void* slot, void* ctx) {
   }
   *(const char**)slot = arg;
   return NULL;
+}
+
+const char* enum_parser(const char* arg, void* slot, void* ctx) {
+  parser_enum_opt_t opts = ctx;
+  if (!opts || !opts->option) {
+    return "no option to match, programmer error";
+  }
+  do {
+    if (strcmp(opts->option, arg) == 0) {
+      *(unsigned*)slot = opts->value;
+      return NULL;
+    }
+  } while ((++opts)->option != NULL);
+  return "expected valid option";
 }
 
 static unsigned get_specs_len(struct arg_spec const* const specs) {

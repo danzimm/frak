@@ -4,13 +4,18 @@
 
 #include "args.h"
 
+enum frak_palette {
+  frak_palette_black_and_white = 0,
+  frak_palette_gray = 1,
+  frak_palette_color = 2,
+};
+
 typedef struct frak_args {
   uint32_t width;
   uint32_t height;
   uint32_t ppi;
   const char* name;
-  bool gray;
-  bool color;
+  unsigned palette;
 } * frak_args_t;
 
 extern struct arg_spec const* const frak_arg_specs;

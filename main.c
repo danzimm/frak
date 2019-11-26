@@ -16,18 +16,26 @@ static inline void tiff_spec_init_from_frak_args(tiff_spec_t spec,
   spec->width = args->width;
   spec->height = args->height;
   spec->ppi = args->ppi;
-  if (args->color) {
-    spec->type = tiff_palette;
-    unsigned colors_byte_len = sizeof(uint16_t) * 3 * 256;
-    spec->palette = malloc(sizeof(struct tiff_palette) + colors_byte_len);
-    spec->palette->len = 3 * 256;
-    arc4random_buf((void*)spec->palette->colors, colors_byte_len);
-  } else if (args->gray) {
-    spec->type = tiff_gray;
-    spec->palette = NULL;
-  } else {
-    spec->type = tiff_bilevel;
-    spec->palette = NULL;
+  switch (args->palette) {
+    case frak_palette_color: {
+      spec->type = tiff_palette;
+      unsigned colors_byte_len = sizeof(uint16_t) * 3 * 256;
+      spec->palette = malloc(sizeof(struct tiff_palette) + colors_byte_len);
+      spec->palette->len = 3 * 256;
+      arc4random_buf((void*)spec->palette->colors, colors_byte_len);
+    } break;
+    case frak_palette_gray:
+      spec->type = tiff_gray;
+      spec->palette = NULL;
+      break;
+    default:
+      fprintf(stderr, "Unknown palette type %d, defaulting to bilevel\n",
+              args->palette);
+      /* fallthrough */
+    case frak_palette_black_and_white:
+      spec->type = tiff_bilevel;
+      spec->palette = NULL;
+      break;
   }
 }
 
