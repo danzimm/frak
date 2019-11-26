@@ -5,16 +5,23 @@
 #include "args.h"
 
 enum frak_palette {
-  frak_palette_black_and_white = 0,
-  frak_palette_gray = 1,
-  frak_palette_color = 2,
-  frak_palette_blue = 3,
+  frak_palette_default = 0,
+  frak_palette_black_and_white = 1,
+  frak_palette_gray = 2,
+  frak_palette_color = 3,
+  frak_palette_custom = 4,
 };
 
 enum frak_design {
   frak_design_noise = 0,
   frak_design_mandlebrot = 1,
   frak_design_default = 2,
+};
+
+struct frak_color {
+  uint8_t red;
+  uint8_t green;
+  uint8_t blue;
 };
 
 typedef struct frak_args {
@@ -25,6 +32,8 @@ typedef struct frak_args {
   unsigned palette;
   unsigned design;
   uint32_t max_iteration;
+  struct frak_color* from;
+  struct frak_color* to;
 } * frak_args_t;
 
 extern struct arg_spec const* const frak_arg_specs;

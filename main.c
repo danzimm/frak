@@ -81,6 +81,14 @@ static void fill_color_palette(struct tiff_palette_color* colors, unsigned len,
   } while ((++iter) != end);
 }
 
+static struct tiff_palette_color frak_color_to_tiff(struct frak_color* color) {
+  return (struct tiff_palette_color){
+      .red = 65535 * color->red / 255,
+      .green = 65535 * color->green / 255,
+      .blue = 65535 * color->blue / 255,
+  };
+}
+
 static inline void tiff_spec_init_from_frak_args(tiff_spec_t spec,
                                                  struct frak_args* args) {
   spec->width = args->width;
@@ -88,7 +96,7 @@ static inline void tiff_spec_init_from_frak_args(tiff_spec_t spec,
   spec->ppi = args->ppi;
   switch (args->palette) {
     case frak_palette_color:
-    case frak_palette_blue: {
+    case frak_palette_custom: {
       spec->type = tiff_palette;
       unsigned colors_byte_len = sizeof(uint16_t) * 3 * 256;
       spec->palette = malloc(sizeof(struct tiff_palette) + colors_byte_len);
@@ -96,16 +104,8 @@ static inline void tiff_spec_init_from_frak_args(tiff_spec_t spec,
       if (args->palette == frak_palette_color) {
         arc4random_buf((void*)spec->palette->colors, colors_byte_len);
       } else {
-        static struct tiff_palette_color from = {
-            .red = 256 * 0,
-            .green = 256 * 0,
-            .blue = 256 * 0,
-        };
-        static struct tiff_palette_color to = {
-            .red = 256 * 0,
-            .green = 256 * 97,
-            .blue = 256 * 255,
-        };
+        struct tiff_palette_color from = frak_color_to_tiff(args->from);
+        struct tiff_palette_color to = frak_color_to_tiff(args->to);
         fill_color_palette(spec->palette->colors, 256, &from, &to);
       }
     } break;
