@@ -19,9 +19,15 @@ enum frak_design {
 };
 
 struct frak_color {
+  uint16_t i;
   uint8_t red;
   uint8_t green;
   uint8_t blue;
+};
+
+struct frak_colors {
+  unsigned count;
+  struct frak_color colors[];
 };
 
 typedef struct frak_args {
@@ -32,8 +38,7 @@ typedef struct frak_args {
   unsigned palette;
   unsigned design;
   uint32_t max_iteration;
-  struct frak_color* from;
-  struct frak_color* to;
+  struct frak_colors* colors;
   double curve;
 } * frak_args_t;
 

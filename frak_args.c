@@ -64,20 +64,32 @@ static bool cp_num_bnd(const char** iter, char* buf, unsigned cnt, char c) {
 static char* color_parser(const char* arg, void* slot, void* ctx) {
   (void)ctx;
   const char* iter = arg;
+  char index[4];
   char red[4];
   char green[4];
   char blue[4];
-  bool success = cp_num_bnd(&iter, red, 3, ',') &&
-                 cp_num_bnd(&iter, green, 3, ',') &&
-                 cp_num_bnd(&iter, blue, 3, ',');
+  bool success =
+      cp_num_bnd(&iter, index, 3, ',') && cp_num_bnd(&iter, red, 3, ',') &&
+      cp_num_bnd(&iter, green, 3, ',') && cp_num_bnd(&iter, blue, 3, ',');
   if (!success) {
-    return strdup("bad color, expected r,g,b");
+    return strdup("bad color, expected i,r,g,b");
   }
-  struct frak_color* color = malloc(sizeof(struct frak_color));
+
+  struct frak_colors* colors = *(struct frak_colors**)slot;
+  if (!colors) {
+    colors = malloc(sizeof(struct frak_colors));
+    colors->count = 0;
+  }
+
+  colors = realloc(colors, sizeof(struct frak_colors) +
+                               sizeof(struct frak_color) * (colors->count + 1));
+  struct frak_color* color = &colors->colors[colors->count++];
+  color->i = atoi(index);
   color->red = atoi(red);
   color->green = atoi(green);
   color->blue = atoi(blue);
-  *(struct frak_color**)slot = color;
+
+  *(struct frak_colors**)slot = colors;
   return NULL;
 }
 
@@ -126,24 +138,14 @@ struct arg_spec const* const frak_arg_specs = (struct arg_spec[]){
      .required = false,
      .parser = pu32_parser,
      .offset = offsetof(struct frak_args, max_iteration)},
-    {.flag = "--from",
+    {.flag = "--color",
      .takes_arg = true,
      .required = false,
      .parser = color_parser,
-     .offset = offsetof(struct frak_args, from),
-     .help = "Specify the color to start the gradient at when generating a"
-             " custom color palette. Arg format is r,g,b. Implies --palette"
-             " custom if --palette is left unspecified, errors out if palette"
-             " is specified as non-custom"},
-    {.flag = "--to",
-     .takes_arg = true,
-     .required = false,
-     .parser = color_parser,
-     .offset = offsetof(struct frak_args, to),
-     .help = "Specify the color to end the gradient at when generating a"
-             " custom color palette. Arg format is r,g,b. Implies --palette"
-             " custom if --palette is left unspecified, errors out if palette"
-             " is specified as non-custom"},
+     .offset = offsetof(struct frak_args, colors),
+     .help = "Specify a color to use starting at iteration i. Arg format is"
+             " i,r,g,b. Implies --palette custom if --palette is left"
+             " unspecified, errors out if palette is non-custom"},
     {.flag = "--color-curve",
      .takes_arg = true,
      .required = false,
@@ -162,9 +164,14 @@ void frak_args_init(frak_args_t args) {
   args->palette = 0;
   args->design = frak_design_default;
   args->max_iteration = 0;
-  args->from = NULL;
-  args->to = NULL;
+  args->colors = NULL;
   args->curve = 1.0;
+}
+
+static int color_sort(void const* a, void const* b) {
+  struct frak_color const* ca = a;
+  struct frak_color const* cb = b;
+  return ca->i - cb->i;
 }
 
 char* frak_args_validate(frak_args_t args) {
@@ -187,22 +194,26 @@ char* frak_args_validate(frak_args_t args) {
     args->max_iteration = 1000;
   }
 
-  if (args->from && !args->to) {
-    return strdup("Cannot specify --from and not --to");
-  } else if (!args->from && args->to) {
-    return strdup("Cannot specify --to and not --from");
-  } else if (args->from && args->to) {
+  if (args->colors) {
     if (args->palette == frak_palette_default) {
       args->palette = frak_palette_custom;
     } else if (args->palette != frak_palette_custom) {
-      return strdup("Cannot specify --from/--to without --palette custom");
+      return strdup("Cannot specify --color without --palette custom");
     }
   }
   if (args->palette == frak_palette_default) {
     args->palette = frak_palette_black_and_white;
   } else if (args->palette == frak_palette_custom) {
-    if (!(args->from && args->to)) {
-      return strdup("Must specify --from/--to with --palette custom");
+    if (!args->colors) {
+      return strdup("Must specify --color with --palette custom");
+    }
+    if (args->colors->count < 2) {
+      return strdup("Must specify at least two --color options");
+    }
+    qsort(args->colors->colors, args->colors->count, sizeof(struct frak_color),
+          color_sort);
+    if (args->colors->colors[args->colors->count - 1].i > 256) {
+      return strdup("Colors cannot be at an index greater than 256");
     }
   }
   return NULL;

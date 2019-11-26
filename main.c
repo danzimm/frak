@@ -107,14 +107,30 @@ static inline void tiff_spec_init_from_frak_args(tiff_spec_t spec,
     case frak_palette_custom: {
       spec->type = tiff_palette;
       unsigned colors_byte_len = sizeof(uint16_t) * 3 * 256;
-      spec->palette = malloc(sizeof(struct tiff_palette) + colors_byte_len);
+      spec->palette = calloc(1, sizeof(struct tiff_palette) + colors_byte_len);
       spec->palette->len = 3 * 256;
       if (args->palette == frak_palette_color) {
         arc4random_buf((void*)spec->palette->colors, colors_byte_len);
       } else {
-        struct tiff_palette_color from = frak_color_to_tiff(args->from);
-        struct tiff_palette_color to = frak_color_to_tiff(args->to);
-        fill_color_palette(spec->palette->colors, 256, &from, &to, args->curve);
+        struct frak_color* fcol = args->colors->colors;
+        struct tiff_palette_color* pcol = spec->palette->colors;
+
+        struct frak_color* from_fcol = fcol;
+        struct frak_color* to_fcol = fcol + 1;
+        struct frak_color const* const end_fcol = fcol + args->colors->count;
+
+        uint16_t from_i;
+        uint16_t to_i;
+        struct tiff_palette_color from = frak_color_to_tiff(from_fcol);
+        struct tiff_palette_color to;
+        do {
+          from_i = from_fcol->i;
+          to_i = to_fcol->i;
+          to = frak_color_to_tiff(to_fcol);
+          fill_color_palette(pcol + from_i, to_i - from_i, &from, &to,
+                             args->curve);
+          from = to;
+        } while ((++to_fcol) != end_fcol);
       }
     } break;
     case frak_palette_gray:
