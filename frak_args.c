@@ -144,6 +144,13 @@ struct arg_spec const* const frak_arg_specs = (struct arg_spec[]){
              " custom color palette. Arg format is r,g,b. Implies --palette"
              " custom if --palette is left unspecified, errors out if palette"
              " is specified as non-custom"},
+    {.flag = "--color-curve",
+     .takes_arg = true,
+     .required = false,
+     .parser = pdbl_parser,
+     .offset = offsetof(struct frak_args, curve),
+     .help = "Specify the quadratic curve to choose colors between --from &"
+             " --to"},
     {.flag = NULL},
 };
 
@@ -157,6 +164,7 @@ void frak_args_init(frak_args_t args) {
   args->max_iteration = 0;
   args->from = NULL;
   args->to = NULL;
+  args->curve = 1.0;
 }
 
 char* frak_args_validate(frak_args_t args) {

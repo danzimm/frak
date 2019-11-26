@@ -1,6 +1,7 @@
 // Copywrite (c) 2019 Dan Zimmerman
 
 #include <fcntl.h>
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -54,9 +55,15 @@ static void mandlebrot_generator(struct frak_args const* const args,
   }
 }
 
+// n-atic:
+// ax^n + c = y
+// a(0)^n + c = from
+// a(len)^n + from = to
+// => a = (to - from) / len^n
+// y = ((to - from) / len^n)x^n + from
 static void fill_color_palette(struct tiff_palette_color* colors, unsigned len,
                                struct tiff_palette_color* from,
-                               struct tiff_palette_color* to) {
+                               struct tiff_palette_color* to, uint32_t curve) {
   if (!len) {
     return;
   }
@@ -64,21 +71,22 @@ static void fill_color_palette(struct tiff_palette_color* colors, unsigned len,
   double r = (double)from->red;
   double g = (double)from->green;
   double b = (double)from->blue;
+  double c = (double)curve;
 
-  double rstep = ((double)to->red - r) / (double)len;
-  double gstep = ((double)to->green - g) / (double)len;
-  double bstep = ((double)to->blue - b) / (double)len;
+  double rstep = ((double)to->red - r) / pow((double)len, c);
+  double gstep = ((double)to->green - g) / pow((double)len, c);
+  double bstep = ((double)to->blue - b) / pow((double)len, c);
 
-  struct tiff_palette_color* iter = colors;
-  struct tiff_palette_color* const end = colors + len;
+  unsigned x = 0;
   do {
-    iter->red = (uint16_t)r;
-    iter->green = (uint16_t)g;
-    iter->blue = (uint16_t)b;
+    struct tiff_palette_color* color = &colors[x];
+    color->red = (uint16_t)(r + rstep * pow((double)x, c));
+    color->green = (uint16_t)(g + gstep * pow((double)x, c));
+    color->blue = (uint16_t)(b + bstep * pow((double)x, c));
     r += rstep;
     g += gstep;
     b += bstep;
-  } while ((++iter) != end);
+  } while ((++x) != len);
 }
 
 static struct tiff_palette_color frak_color_to_tiff(struct frak_color* color) {
@@ -106,7 +114,7 @@ static inline void tiff_spec_init_from_frak_args(tiff_spec_t spec,
       } else {
         struct tiff_palette_color from = frak_color_to_tiff(args->from);
         struct tiff_palette_color to = frak_color_to_tiff(args->to);
-        fill_color_palette(spec->palette->colors, 256, &from, &to);
+        fill_color_palette(spec->palette->colors, 256, &from, &to, args->curve);
       }
     } break;
     case frak_palette_gray:
