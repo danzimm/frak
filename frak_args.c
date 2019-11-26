@@ -15,7 +15,7 @@ void frak_usage() {
   exit(1);
 }
 
-static struct parser_enum_opt palette_enum_opts[] = {
+static struct arg_enum_opt palette_enum_opts[] = {
     {.option = "b", .value = frak_palette_black_and_white},
     {.option = "bw", .value = frak_palette_black_and_white},
     {.option = "bilevel", .value = frak_palette_black_and_white},

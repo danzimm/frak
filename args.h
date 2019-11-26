@@ -24,12 +24,12 @@ char* pu32_parser(const char* arg, void* slot, void* ctx);
 char* bool_parser(const char* arg, void* slot, void* ctx);
 char* str_parser(const char* arg, void* slot, void* ctx);
 
-typedef struct parser_enum_opt {
+typedef struct arg_enum_opt {
   const char* option;
   unsigned value;
-} * parser_enum_opt_t;
+} * arg_enum_opt_t;
 
-// ctx is a parser_enum_opt_t, ending with a 0 entry
+// ctx is a arg_enum_opt_t, ending with a 0 entry
 char* enum_parser(const char* arg, void* slot, void* ctx);
 
 char* parse_args(int argc, const char* argv[],

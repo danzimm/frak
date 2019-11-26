@@ -59,7 +59,7 @@ static char* strconcat(char* left, const char* right) {
   return strcat(left, right);
 }
 
-static char* strconcat_enum_opts(char* result, parser_enum_opt_t opts) {
+static char* strconcat_enum_opts(char* result, arg_enum_opt_t opts) {
   do {
     result = strconcat(result, opts->option);
     if ((opts + 1)->option != NULL) {
@@ -70,7 +70,7 @@ static char* strconcat_enum_opts(char* result, parser_enum_opt_t opts) {
 }
 
 char* enum_parser(const char* arg, void* slot, void* ctx) {
-  parser_enum_opt_t opts = ctx;
+  arg_enum_opt_t opts = ctx;
   if (!opts || !opts->option) {
     return strdup("no option to match, programmer error");
   }
@@ -269,7 +269,7 @@ static char* pu32_help_printer(struct arg_spec const* const spec) {
 
 static char* enum_help_printer(struct arg_spec const* const spec) {
   char* result = create_printer_prefix(spec);
-  parser_enum_opt_t opts = spec->parser_ctx;
+  arg_enum_opt_t opts = spec->parser_ctx;
   if (!opts || !opts->option) {
     return strconcat(result, "No valid options, programmer error");
   }
