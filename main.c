@@ -130,6 +130,7 @@ static inline void tiff_spec_init_from_frak_args(tiff_spec_t spec,
           fill_color_palette(pcol + from_i, to_i - from_i, &from, &to,
                              args->curve);
           from = to;
+          from_fcol = to_fcol;
         } while ((++to_fcol) != end_fcol);
       }
     } break;
