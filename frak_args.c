@@ -111,5 +111,8 @@ char* frak_args_validate(frak_args_t args) {
   if (args->design == frak_design_default) {
     args->design = frak_design_noise;
   }
+  if (args->max_iteration == 0) {
+    args->max_iteration = 1000;
+  }
   return NULL;
 }
