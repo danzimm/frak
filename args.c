@@ -6,48 +6,73 @@
 #include <stdio.h>
 #include <string.h>
 
-const char* pu32_parser(const char* arg, void* slot, void* ctx) {
+char* pu32_parser(const char* arg, void* slot, void* ctx) {
   (void)ctx;
+  char* result = NULL;
+  const char* cresult = NULL;
   if (*arg == '\0') {
-    return "unexpected empty string";
+    cresult = "unexpected empty string";
+    goto out;
   }
   char* tmp;
   unsigned long x = strtoul(arg, &tmp, 0);
   if (*tmp != '\0') {
-    return "expected number";
+    asprintf(&result, "expected number, error at %c", *tmp);
+    goto out;
   }
   if (x >= UINT32_MAX) {
-    return "too large";
+    cresult = "too large";
+    goto out;
   }
   if (x == 0) {
-    return "can't be 0";
+    cresult = "can't be 0";
+    goto out;
   }
   *(uint32_t*)slot = (uint32_t)x;
-  return NULL;
+out:
+  if (cresult != NULL) {
+    result = strdup(cresult);
+  }
+  return result;
 }
 
-const char* bool_parser(const char* arg, void* slot, void* ctx) {
+char* bool_parser(const char* arg, void* slot, void* ctx) {
   (void)ctx;
   if (arg) {
-    return "unexpected argument";
+    return strdup("unexpected argument");
   }
   *(bool*)slot = true;
   return NULL;
 }
 
-const char* str_parser(const char* arg, void* slot, void* ctx) {
+char* str_parser(const char* arg, void* slot, void* ctx) {
   (void)ctx;
   if (!arg) {
-    return "expected argument";
+    return strdup("expected argument");
   }
   *(const char**)slot = arg;
   return NULL;
 }
 
-const char* enum_parser(const char* arg, void* slot, void* ctx) {
+static char* strconcat(char* left, const char* right) {
+  left = realloc(left, strlen(left) + strlen(right) + 1);
+  return strcat(left, right);
+}
+
+static char* strconcat_enum_opts(char* result, parser_enum_opt_t opts) {
+  do {
+    result = strconcat(result, opts->option);
+    if ((opts + 1)->option != NULL) {
+      result = strconcat(result, ", ");
+    }
+  } while ((++opts)->option != NULL);
+  return result;
+}
+
+char* enum_parser(const char* arg, void* slot, void* ctx) {
   parser_enum_opt_t opts = ctx;
   if (!opts || !opts->option) {
-    return "no option to match, programmer error";
+    return strdup("no option to match, programmer error");
   }
   do {
     if (strcmp(opts->option, arg) == 0) {
@@ -55,7 +80,7 @@ const char* enum_parser(const char* arg, void* slot, void* ctx) {
       return NULL;
     }
   } while ((++opts)->option != NULL);
-  return "expected valid option";
+  return strconcat_enum_opts(strdup("expected one of "), ctx);
 }
 
 static unsigned get_specs_len(struct arg_spec const* const specs) {
@@ -111,11 +136,12 @@ char* parse_args(int argc, const char* argv[],
       found = true;
       did_parse[spec_iter - specs] = true;
 
-      const char* spec_err = spec_iter->parser(arg, ctx + spec_iter->offset,
-                                               spec_iter->parser_ctx);
+      char* spec_err = spec_iter->parser(arg, ctx + spec_iter->offset,
+                                         spec_iter->parser_ctx);
       if (spec_err) {
         asprintf(&err, "Unable to parse '%s%s%s': %s", spec_iter->flag,
                  arg ? " " : "", arg ?: "", spec_err);
+        free(spec_err);
         goto out;
       }
       break;
@@ -175,11 +201,6 @@ static void asprintf_padded(char** out, unsigned width, const char* fmt, ...) {
   va_end(va);
   asprintf(out, "%-*s", width, tmp);
   free(tmp);
-}
-
-static char* strconcat(char* left, const char* right) {
-  left = realloc(left, strlen(left) + strlen(right) + 1);
-  return strcat(left, right);
 }
 
 static const char* find_last_within(const char* str, char c, unsigned width) {
@@ -253,12 +274,7 @@ static char* enum_help_printer(struct arg_spec const* const spec) {
     return strconcat(result, "No valid options, programmer error");
   }
   result = strconcat(result, "Valid options are: ");
-  do {
-    result = strconcat(result, opts->option);
-    if ((opts + 1)->option != NULL) {
-      result = strconcat(result, ", ");
-    }
-  } while ((++opts)->option != NULL);
+  result = strconcat_enum_opts(result, opts);
   return result;
 }
 

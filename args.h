@@ -6,7 +6,7 @@
 #include <stdlib.h>
 
 struct arg_spec;
-typedef const char* (*arg_parser_t)(const char* arg, void* slot, void* ctx);
+typedef char* (*arg_parser_t)(const char* arg, void* slot, void* ctx);
 typedef char* (*arg_help_printer_t)(struct arg_spec const* const spec);
 
 struct arg_spec {
@@ -20,9 +20,9 @@ struct arg_spec {
   arg_help_printer_t help_printer;
 };
 
-const char* pu32_parser(const char* arg, void* slot, void* ctx);
-const char* bool_parser(const char* arg, void* slot, void* ctx);
-const char* str_parser(const char* arg, void* slot, void* ctx);
+char* pu32_parser(const char* arg, void* slot, void* ctx);
+char* bool_parser(const char* arg, void* slot, void* ctx);
+char* str_parser(const char* arg, void* slot, void* ctx);
 
 typedef struct parser_enum_opt {
   const char* option;
@@ -30,7 +30,7 @@ typedef struct parser_enum_opt {
 } * parser_enum_opt_t;
 
 // ctx is a parser_enum_opt_t, ending with a 0 entry
-const char* enum_parser(const char* arg, void* slot, void* ctx);
+char* enum_parser(const char* arg, void* slot, void* ctx);
 
 char* parse_args(int argc, const char* argv[],
                  struct arg_spec const* const specs, void (*initializer)(void*),
