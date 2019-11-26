@@ -29,6 +29,11 @@ static struct arg_enum_opt palette_enum_opts[] = {
     {.option = NULL, .value = 0},
 };
 
+static struct arg_enum_opt design_enum_opts[] = {
+    {.option = "noise", .value = frak_design_noise},
+    {.option = NULL, .value = 0},
+};
+
 struct arg_spec const* const frak_arg_specs = (struct arg_spec[]){
     {.flag = "--width",
      .takes_arg = true,
@@ -63,6 +68,12 @@ struct arg_spec const* const frak_arg_specs = (struct arg_spec[]){
      .parser_ctx = (void*)palette_enum_opts,
      .offset = offsetof(struct frak_args, palette),
      .help = "Specify the color palette to use when generating the image"},
+    {.flag = "--design",
+     .takes_arg = true,
+     .required = false,
+     .parser = enum_parser,
+     .parser_ctx = (void*)design_enum_opts,
+     .offset = offsetof(struct frak_args, design)},
     {.flag = NULL},
 };
 
@@ -72,6 +83,7 @@ void frak_args_init(frak_args_t args) {
   args->ppi = 401;
   args->name = NULL;
   args->palette = 0;
+  args->design = 0;
 }
 
 char* frak_args_validate(frak_args_t args) {
