@@ -23,6 +23,7 @@ struct arg_spec {
 char* pu32_parser(const char* arg, void* slot, void* ctx);
 char* bool_parser(const char* arg, void* slot, void* ctx);
 char* str_parser(const char* arg, void* slot, void* ctx);
+char* pdbl_parser(const char* arg, void* slot, void* ctx);
 
 typedef struct arg_enum_opt {
   const char* option;

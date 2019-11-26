@@ -54,6 +54,34 @@ char* str_parser(const char* arg, void* slot, void* ctx) {
   return NULL;
 }
 
+char* pdbl_parser(const char* arg, void* slot, void* ctx) {
+  (void)ctx;
+  char* result = NULL;
+  const char* cresult = NULL;
+  if (*arg == '\0') {
+    cresult = "unexpected empty string";
+    goto out;
+  }
+  char* tmp;
+  double value = strtod(arg, &tmp);
+  if (*tmp != '\0') {
+    asprintf(&result, "expected number, error at %c", *tmp);
+    goto out;
+  }
+  if (value <= 0.0) {
+    cresult = "expected positive number";
+    goto out;
+  }
+
+  *(double*)slot = value;
+
+out:
+  if (cresult != NULL) {
+    result = strdup(cresult);
+  }
+  return result;
+}
+
 static char* strconcat(char* left, const char* right) {
   left = realloc(left, strlen(left) + strlen(right) + 1);
   return strcat(left, right);
@@ -267,6 +295,11 @@ static char* pu32_help_printer(struct arg_spec const* const spec) {
   return strconcat(create_printer_prefix(spec), "Must be a positive integer");
 }
 
+static char* pdbl_help_printer(struct arg_spec const* const spec) {
+  return strconcat(create_printer_prefix(spec),
+                   "Must be a positive floating point number");
+}
+
 static char* enum_help_printer(struct arg_spec const* const spec) {
   char* result = create_printer_prefix(spec);
   arg_enum_opt_t opts = spec->parser_ctx;
@@ -285,6 +318,8 @@ static arg_help_printer_t get_default_help_printer(
     return pu32_help_printer;
   } else if (parser == enum_parser) {
     return enum_help_printer;
+  } else if (parser == pdbl_parser) {
+    return pdbl_help_printer;
   }
   return NULL;
 }
