@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/mman.h>
+#include <sys/stat.h>
 #include <unistd.h>
 #include <zlib.h>
 
@@ -157,6 +158,7 @@ int main(int argc, const char* argv[]) {
   struct frak_args args;
   struct tiff_spec spec;
   size_t len;
+  int o_flags = 0;
 
   frak_args_init(&args);
   char* err = parse_frak_args(&args, argc, argv);
@@ -168,18 +170,33 @@ int main(int argc, const char* argv[]) {
   max_iteration = args.max_iteration;
 
   tiff_spec_init_from_frak_args(&spec, &args);
-  len = tiff_spec_compute_file_size(&spec);
+  if (args.palette_only) {
+    o_flags = O_RDWR;
+  } else {
+    o_flags = O_RDWR | O_CREAT | O_TRUNC;
+  }
 
-  fd = open(args.name, O_RDWR | O_CREAT | O_TRUNC, 0644);
+  fd = open(args.name, o_flags, 0644);
   if (fd < 0) {
     perror("open");
     rc = 1;
     goto out;
   }
 
-  if ((rc = ftruncate(fd, len)) != 0) {
-    perror("truncate");
-    goto out;
+  if (args.palette_only) {
+    struct stat st;
+    if (fstat(fd, &st) != 0) {
+      perror("fstat");
+      rc = 1;
+      goto out;
+    }
+    len = st.st_size;
+  } else {
+    len = tiff_spec_compute_file_size(&spec);
+    if ((rc = ftruncate(fd, len)) != 0) {
+      perror("truncate");
+      goto out;
+    }
   }
 
   buf = mmap(NULL, len, PROT_WRITE | PROT_READ, MAP_FILE | MAP_SHARED, fd, 0);
@@ -189,22 +206,30 @@ int main(int argc, const char* argv[]) {
     goto out;
   }
 
-  data = tiff_spec_write_metadata(&spec, buf);
+  if (args.palette_only) {
+    const char* err = tiff_update_color_palette(&spec, buf);
+    if (err) {
+      fprintf(stderr, "Failed to update color palette: %s\n", err);
+      rc = 1;
+    }
+  } else {
+    data = tiff_spec_write_metadata(&spec, buf);
 
-  void (*generator)(struct frak_args const* const, void*, size_t);
-  switch (args.design) {
-    case frak_design_mandlebrot:
-      generator = mandlebrot_generator;
-      break;
-    default:
-      fprintf(stderr, "Unexpected design %u, defaulting to noise\n",
-              args.design);
-      /* fallthrough */
-    case frak_design_noise:
-      generator = noise_generator;
-      break;
+    void (*generator)(struct frak_args const* const, void*, size_t);
+    switch (args.design) {
+      case frak_design_mandlebrot:
+        generator = mandlebrot_generator;
+        break;
+      default:
+        fprintf(stderr, "Unexpected design %u, defaulting to noise\n",
+                args.design);
+        /* fallthrough */
+      case frak_design_noise:
+        generator = noise_generator;
+        break;
+    }
+    generator(&args, data, len - (data - buf));
   }
-  generator(&args, data, len - (data - buf));
 
 out:
   if (buf && buf != MAP_FAILED) {
@@ -213,7 +238,7 @@ out:
   if (fd >= 0) {
     close(fd);
   }
-  if (rc != 0) {
+  if (rc != 0 && (o_flags & O_CREAT) != 0) {
     unlink(args.name);
   }
   if (spec.palette) {

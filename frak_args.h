@@ -40,6 +40,7 @@ typedef struct frak_args {
   uint32_t max_iteration;
   struct frak_colors* colors;
   double curve;
+  bool palette_only;
 } * frak_args_t;
 
 extern struct arg_spec const* const frak_arg_specs;

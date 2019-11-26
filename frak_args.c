@@ -82,8 +82,8 @@ static char* color_parser(const char* arg, void* slot, void* ctx) {
   }
 
   colors = realloc(colors, sizeof(struct frak_colors) +
-                               sizeof(struct frak_color) * (colors->count + 1));
-  struct frak_color* color = &colors->colors[colors->count++];
+                               sizeof(struct frak_color) * (++colors->count));
+  struct frak_color* color = &colors->colors[colors->count - 1];
   color->i = atoi(index);
   color->red = atoi(red);
   color->green = atoi(green);
@@ -151,8 +151,14 @@ struct arg_spec const* const frak_arg_specs = (struct arg_spec[]){
      .required = false,
      .parser = pdbl_parser,
      .offset = offsetof(struct frak_args, curve),
-     .help = "Specify the quadratic curve to choose colors between --from &"
-             " --to"},
+     .help = "Specify the quadratic curve to choose colors between different"
+             " --color's"},
+    {.flag = "--palette-only",
+     .takes_arg = false,
+     .required = false,
+     .parser = bool_parser,
+     .offset = offsetof(struct frak_args, palette_only),
+     .help = "In place change the color palette of an image"},
     {.flag = NULL},
 };
 
@@ -166,6 +172,7 @@ void frak_args_init(frak_args_t args) {
   args->max_iteration = 0;
   args->colors = NULL;
   args->curve = 1.0;
+  args->palette_only = false;
 }
 
 static int color_sort(void const* a, void const* b) {
@@ -214,6 +221,14 @@ char* frak_args_validate(frak_args_t args) {
           color_sort);
     if (args->colors->colors[args->colors->count - 1].i > 256) {
       return strdup("Colors cannot be at an index greater than 256");
+    }
+  }
+  if (args->palette_only) {
+    if (args->palette != frak_palette_custom &&
+        args->palette != frak_palette_color) {
+      return strdup(
+          "Can only in place change palette if color palette is"
+          " being used (--palette color/custom)");
     }
   }
   return NULL;

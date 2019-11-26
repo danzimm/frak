@@ -185,3 +185,32 @@ void* tiff_spec_write_metadata(tiff_spec_t spec, void* buf) {
 
   return buf;
 }
+
+const char* tiff_update_color_palette(tiff_spec_t spec, void* buffer) {
+  struct tiff* t = buffer;
+  if (t->byte_order != 0x4949 || t->magic != 42) {
+    return "Invalid tiff header, only little endian supported";
+  }
+  struct ifd* ifd = buffer + t->ifd_offset;
+  struct ifd_entry* iter = ifd->entries;
+  struct ifd_entry* const end = iter + ifd->len;
+  if (iter == end) {
+    return "Invalid tiff file, empty IFD!";
+  }
+  do {
+    if (iter->tag == ColorMap) {
+      break;
+    }
+  } while ((++iter) != end);
+  if (iter == end) {
+    return "Failed to find tiff colormap to update";
+  }
+  if (iter->type != IFD_SHORT) {
+    return "Malformed colormap, non-short data";
+  }
+  if (iter->len != 3 * 256) {
+    return "Unable to update colormap without 256 entries";
+  }
+  write_palette(buffer + iter->value_or_offset, spec->palette);
+  return 0;
+}

@@ -32,3 +32,4 @@ typedef struct tiff_spec {
 
 uint32_t tiff_spec_compute_file_size(tiff_spec_t spec);
 void* tiff_spec_write_metadata(tiff_spec_t spec, void* buffer);
+const char* tiff_update_color_palette(tiff_spec_t spec, void* buffer);
