@@ -232,6 +232,57 @@ char* compute_requireds_str(struct arg_spec const* const specs) {
   return result;
 }
 
+static char* create_printer_prefix(struct arg_spec const* const spec) {
+  char* result;
+  if (spec->help) {
+    asprintf(&result, "%s. ", spec->help);
+  } else {
+    result = strdup("");
+  }
+  return result;
+}
+
+static char* pu32_help_printer(struct arg_spec const* const spec) {
+  return strconcat(create_printer_prefix(spec), "Must be a positive integer");
+}
+
+static char* enum_help_printer(struct arg_spec const* const spec) {
+  char* result = create_printer_prefix(spec);
+  parser_enum_opt_t opts = spec->parser_ctx;
+  if (!opts || !opts->option) {
+    return strconcat(result, "No valid options, programmer error");
+  }
+  result = strconcat(result, "Valid options are: ");
+  do {
+    result = strconcat(result, opts->option);
+    if ((opts + 1)->option != NULL) {
+      result = strconcat(result, ", ");
+    }
+  } while ((++opts)->option != NULL);
+  return result;
+}
+
+static arg_help_printer_t get_default_help_printer(
+    struct arg_spec const* const spec) {
+  arg_parser_t parser = spec->parser;
+  if (parser == pu32_parser) {
+    return pu32_help_printer;
+  } else if (parser == enum_parser) {
+    return enum_help_printer;
+  }
+  return NULL;
+}
+
+static char* default_help_printer(struct arg_spec const* const spec) {
+  return strdup(spec->help);
+}
+
+static char* get_help_summary(struct arg_spec const* const spec) {
+  arg_help_printer_t help_printer =
+      spec->help_printer ?: get_default_help_printer(spec);
+  return (help_printer ?: default_help_printer)(spec);
+}
+
 char* create_usage(const char* cmd, const char* description,
                    struct arg_spec const* const specs) {
   char* prologue = NULL;
@@ -287,7 +338,8 @@ print_opts:
     free(tmp);
 
     // Print the summary
-    ctmp = iter->help;
+    tmp = get_help_summary(iter);
+    ctmp = tmp;
     str_word_chunk(&ctmp, summary, summary_width);
     args = strconcat(args, summary);
 
@@ -297,6 +349,7 @@ print_opts:
       args = strconcat(args, summary);
       str_word_chunk(&ctmp, summary, summary_width);
     }
+    free(tmp);
   } while ((++iter)->flag != NULL);
 
 print_nonrequired:

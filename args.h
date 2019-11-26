@@ -7,6 +7,7 @@
 
 struct arg_spec;
 typedef const char* (*arg_parser_t)(const char* arg, void* slot, void* ctx);
+typedef char* (*arg_help_printer_t)(struct arg_spec const* const spec);
 
 struct arg_spec {
   const char* flag;
@@ -16,6 +17,7 @@ struct arg_spec {
   void* parser_ctx;
   size_t offset;
   const char* help;
+  arg_help_printer_t help_printer;
 };
 
 const char* pu32_parser(const char* arg, void* slot, void* ctx);
