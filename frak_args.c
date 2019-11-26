@@ -76,6 +76,11 @@ struct arg_spec const* const frak_arg_specs = (struct arg_spec[]){
      .parser = enum_parser,
      .parser_ctx = (void*)design_enum_opts,
      .offset = offsetof(struct frak_args, design)},
+    {.flag = "--max-iter",
+     .takes_arg = true,
+     .required = true,
+     .parser = pu32_parser,
+     .offset = offsetof(struct frak_args, max_iteration)},
     {.flag = NULL},
 };
 
@@ -85,7 +90,8 @@ void frak_args_init(frak_args_t args) {
   args->ppi = 401;
   args->name = NULL;
   args->palette = 0;
-  args->design = 0;
+  args->design = frak_design_default;
+  args->max_iteration = 0;
 }
 
 char* frak_args_validate(frak_args_t args) {
@@ -93,6 +99,16 @@ char* frak_args_validate(frak_args_t args) {
       args->design == frak_design_mandlebrot) {
     return strdup(
         "Mandlebrots cannot be generated with a black & white palette");
+  }
+  if (args->max_iteration != 0) {
+    if (args->design == frak_design_default) {
+      args->design = frak_design_mandlebrot;
+    } else if (args->design != frak_design_mandlebrot) {
+      return strdup("Cannot specify --max-iter without --design mandlebrot");
+    }
+  }
+  if (args->design == frak_design_default) {
+    args->design = frak_design_noise;
   }
   return NULL;
 }

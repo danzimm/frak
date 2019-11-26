@@ -13,6 +13,7 @@ enum frak_palette {
 enum frak_design {
   frak_design_noise = 0,
   frak_design_mandlebrot = 1,
+  frak_design_default = 2,
 };
 
 typedef struct frak_args {
@@ -22,6 +23,7 @@ typedef struct frak_args {
   const char* name;
   unsigned palette;
   unsigned design;
+  uint32_t max_iteration;
 } * frak_args_t;
 
 extern struct arg_spec const* const frak_arg_specs;

@@ -17,6 +17,8 @@ static void noise_generator(struct frak_args const* const args, void* buffer,
   arc4random_buf(buffer, len);
 }
 
+static uint32_t max_iteration = 1000;
+
 // c = x + iy
 // m_c(z) = z^2 + c
 //        = z_x^2 - z_y^2 + x + i(2z_x * z_y + y)
@@ -25,8 +27,9 @@ static uint8_t compute_mandlebrot_pixel(double x, double y) {
   double zy = y;
   double tmp;
   double magsq = zx * zx + zy * zy;
-  uint8_t result = 0;
-  while (magsq <= 4.0 && result != 255) {
+  uint32_t result = 0;
+  const uint32_t max = max_iteration;
+  while (magsq <= 4.0 && result != max) {
     tmp = zx * zx - zy * zy + x;
     zy = 2 * zx * zy + y;
     zx = tmp;
@@ -95,6 +98,7 @@ int main(int argc, const char* argv[]) {
     free(err);
     frak_usage();
   }
+  max_iteration = args.max_iteration;
 
   tiff_spec_init_from_frak_args(&spec, &args);
   len = tiff_spec_compute_file_size(&spec);
