@@ -11,6 +11,46 @@
 #include "frak_args.h"
 #include "tiff.h"
 
+static void noise_generator(struct frak_args const* const args, void* buffer,
+                            size_t len) {
+  (void)args;
+  arc4random_buf(buffer, len);
+}
+
+// c = x + iy
+// m_c(z) = z^2 + c
+//        = z_x^2 - z_y^2 + x + i(2z_x * z_y + y)
+static uint8_t compute_mandlebrot_pixel(double x, double y) {
+  double zx = x;
+  double zy = y;
+  double tmp;
+  double magsq = zx * zx + zy * zy;
+  uint8_t result = 0;
+  while (magsq <= 4.0 && result != 255) {
+    tmp = zx * zx - zy * zy + x;
+    zy = 2 * zx * zy + y;
+    zx = tmp;
+    magsq = zx * zx + zy * zy;
+    result += 1;
+  }
+  return result;
+}
+
+static void mandlebrot_generator(struct frak_args const* const args,
+                                 void* buffer, size_t len) {
+  if (args->palette == frak_palette_black_and_white) {
+    fprintf(stderr, "Warning: mandlebrot doesn't support bilevel images\n");
+    return;
+  }
+  for (size_t i = 0; i < len; i++) {
+    uint32_t row = i / args->width;
+    uint32_t column = i % args->width;
+    double x = 4.0 * (double)column / (double)args->width - 2.0;
+    double y = 4.0 * (double)row / (double)args->height - 2.0;
+    *(uint8_t*)(buffer + i) = compute_mandlebrot_pixel(x, y);
+  }
+}
+
 static inline void tiff_spec_init_from_frak_args(tiff_spec_t spec,
                                                  struct frak_args* args) {
   spec->width = args->width;
@@ -79,7 +119,21 @@ int main(int argc, const char* argv[]) {
   }
 
   data = tiff_spec_write_metadata(&spec, buf);
-  arc4random_buf(data, len - (data - buf));
+
+  void (*generator)(struct frak_args const* const, void*, size_t);
+  switch (args.design) {
+    case frak_design_mandlebrot:
+      generator = mandlebrot_generator;
+      break;
+    default:
+      fprintf(stderr, "Unexpected design %u, defaulting to noise\n",
+              args.design);
+      /* fallthrough */
+    case frak_design_noise:
+      generator = noise_generator;
+      break;
+  }
+  generator(&args, data, len - (data - buf));
 
 out:
   if (buf && buf != MAP_FAILED) {

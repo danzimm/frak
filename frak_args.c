@@ -31,6 +31,8 @@ static struct arg_enum_opt palette_enum_opts[] = {
 
 static struct arg_enum_opt design_enum_opts[] = {
     {.option = "noise", .value = frak_design_noise},
+    {.option = "mandlebrot", .value = frak_design_mandlebrot},
+    {.option = "mand", .value = frak_design_mandlebrot},
     {.option = NULL, .value = 0},
 };
 
@@ -87,6 +89,10 @@ void frak_args_init(frak_args_t args) {
 }
 
 char* frak_args_validate(frak_args_t args) {
-  (void)args;
+  if (args->palette == frak_palette_black_and_white &&
+      args->design == frak_design_mandlebrot) {
+    return strdup(
+        "Mandlebrots cannot be generated with a black & white palette");
+  }
   return NULL;
 }

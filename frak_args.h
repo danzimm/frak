@@ -12,6 +12,7 @@ enum frak_palette {
 
 enum frak_design {
   frak_design_noise = 0,
+  frak_design_mandlebrot = 1,
 };
 
 typedef struct frak_args {
