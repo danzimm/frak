@@ -8,7 +8,7 @@ else()
   set(OPT_FLAGS -O3)
 endif()
 
-set(FRAK_CFLAGS -Wall -Werror -Wextra ${OPT_FLAGS})
+set(FRAK_CFLAGS -Wall -Werror -Wextra -D_GNU_SOURCE=1 ${OPT_FLAGS})
 
 add_subdirectory(frakl)
 

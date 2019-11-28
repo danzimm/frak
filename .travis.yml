@@ -2,4 +2,7 @@ language: c
 compiler:
   - clang
   - gcc
+os:
+  - linux
+  - osx
 script: mkdir build && cd build && cmake ../ -G 'Unix Makefiles' -DCMAKE_BUILD_TYPE=Release && make && ./tests/frak_tests
