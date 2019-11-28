@@ -9,6 +9,9 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <zlib.h>
+#if __LINUX__
+#include <sys/random.h>
+#endif
 
 #include "frak_args.h"
 #include "frakl/tiff.h"
@@ -16,7 +19,11 @@
 static void noise_generator(struct frak_args const* const args, void* buffer,
                             size_t len) {
   (void)args;
+#if __APPLE__
   arc4random_buf(buffer, len);
+#elif __LINUX__
+  getrandom(buffer, len);
+#endif
 }
 
 static uint32_t max_iteration = 1000;
