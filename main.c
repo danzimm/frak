@@ -11,7 +11,7 @@
 #include <zlib.h>
 
 #include "frak_args.h"
-#include "tiff.h"
+#include "frakl/tiff.h"
 
 static void noise_generator(struct frak_args const* const args, void* buffer,
                             size_t len) {

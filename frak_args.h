@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "args.h"
+#include "frakl/args.h"
 
 enum frak_palette {
   frak_palette_default = 0,

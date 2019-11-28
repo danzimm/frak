@@ -8,14 +8,11 @@ else()
   set(OPT_FLAGS -O3)
 endif()
 
-set(FRAKL_SRC args.c frak_args.c tiff.c)
-set(FRAK_SRC main.c)
-
 set(FRAK_CFLAGS -Wall -Werror -Wextra ${OPT_FLAGS})
 
-add_library(frakl EXCLUDE_FROM_ALL ${FRAKL_SRC})
-target_compile_options(frakl PRIVATE ${FRAK_CFLAGS})
+add_subdirectory(frakl)
 
+set(FRAK_SRC main.c frak_args.c)
 add_executable(frak ${FRAK_SRC})
 add_dependencies(frak frakl)
 target_compile_options(frak PRIVATE ${FRAK_CFLAGS})
