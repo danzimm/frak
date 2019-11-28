@@ -2,6 +2,8 @@
 
 #pragma once
 
+#include <stdint.h>
+
 #include "frakl/args.h"
 
 enum frak_palette {
