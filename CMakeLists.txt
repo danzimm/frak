@@ -12,5 +12,5 @@ set(FRAK_SRC main.c args.c frak_args.c tiff.c)
 set(FRAK_CFLAGS -Wall -Werror -Wextra ${OPT_FLAGS})
 
 add_executable(frak ${FRAK_SRC})
-target_compile_options(frak PRIVATE ${FRAK_CFLAGS} -O3)
+target_compile_options(frak PRIVATE ${FRAK_CFLAGS})
 SET(CMAKE_EXE_LINKER_FLAGS -lz)
