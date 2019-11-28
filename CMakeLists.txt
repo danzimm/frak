@@ -14,3 +14,5 @@ set(FRAK_CFLAGS -Wall -Werror -Wextra ${OPT_FLAGS})
 add_executable(frak ${FRAK_SRC})
 target_compile_options(frak PRIVATE ${FRAK_CFLAGS})
 SET(CMAKE_EXE_LINKER_FLAGS -lz)
+
+add_subdirectory(tests)
