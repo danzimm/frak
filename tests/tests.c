@@ -3,6 +3,7 @@
 #include "tests.h"
 
 #include <assert.h>
+#include <frakl/time_utils.h>
 #include <setjmp.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -62,19 +63,25 @@ bool run_tests(void) {
     printf("Warning: No tests ran\n");
     return true;
   }
+  volatile struct timespec tstart;
+  volatile struct timespec tend;
   do {
     g_failure.check = iter->name;
     g_failure.file = iter->file;
     g_failure.line = iter->line;
     volatile bool success;
 
+    clock_gettime(CLOCK_MONOTONIC_RAW, (void*)&tstart);
     if (setjmp(g_jmp_env) == 0) {
       iter->cb();
       success = !iter->expect_fail;
     } else {
       success = iter->expect_fail;
     }
-    printf("[%s] %s", success ? "SUCC" : "FAIL", iter->name);
+    clock_gettime(CLOCK_MONOTONIC_RAW, (void*)&tend);
+    timespec_minus((void*)&tend, (void*)&tstart);
+    printf("[%s][%3ld] %s", success ? "SUCC" : "FAIL",
+           tend.tv_sec * 1000 + tend.tv_nsec / 1000000, iter->name);
     if (!success || iter->expect_fail) {
       printf(": %s at %s:%d\n", g_failure.check, g_failure.file,
              g_failure.line);
