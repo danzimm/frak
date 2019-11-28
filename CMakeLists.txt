@@ -16,6 +16,6 @@ set(FRAK_SRC main.c frak_args.c)
 add_executable(frak ${FRAK_SRC})
 add_dependencies(frak frakl)
 target_compile_options(frak PRIVATE ${FRAK_CFLAGS})
-target_link_libraries(frak z frakl)
+target_link_libraries(frak z m frakl)
 
 add_subdirectory(tests)
