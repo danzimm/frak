@@ -9,7 +9,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <zlib.h>
-#if __LINUX__
+#if __linux__
 #include <sys/random.h>
 #endif
 
