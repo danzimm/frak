@@ -10,6 +10,9 @@
 typedef struct test {
   const char* name;
   test_cb_t cb;
+  bool expect_fail;
+  const char* file;
+  int line;
 } * test_t;
 
 struct test_list {
@@ -28,7 +31,8 @@ static struct test_list g_test_list = {0, 0, NULL};
 static jmp_buf g_jmp_env;
 static struct test_failure g_failure = {NULL, NULL, 0};
 
-void register_test(const char* name, test_cb_t cb) {
+void register_test(const char* name, test_cb_t cb, bool expect_fail,
+                   const char* file, int line) {
   unsigned new_len = g_test_list.length + 1;
   if (g_test_list.capacity < new_len) {
     unsigned new_cap = g_test_list.capacity;
@@ -45,6 +49,9 @@ void register_test(const char* name, test_cb_t cb) {
   test_t new_test = &g_test_list.tests[new_len - 1];
   new_test->name = name;
   new_test->cb = cb;
+  new_test->expect_fail = expect_fail;
+  new_test->file = file;
+  new_test->line = line;
 }
 
 bool run_tests(void) {
@@ -56,14 +63,23 @@ bool run_tests(void) {
     return true;
   }
   do {
+    g_failure.check = iter->name;
+    g_failure.file = iter->file;
+    g_failure.line = iter->line;
+    volatile bool success;
+
     if (setjmp(g_jmp_env) == 0) {
-      printf("  %s", iter->name);
       iter->cb();
-      printf("\n");
+      success = !iter->expect_fail;
     } else {
-      printf(" Failure: %s at %s:%d\n", g_failure.check, g_failure.file,
+      success = iter->expect_fail;
+    }
+    printf("[%s] %s", success ? "SUCC" : "FAIL", iter->name);
+    if (!success || iter->expect_fail) {
+      printf(": %s at %s:%d\n", g_failure.check, g_failure.file,
              g_failure.line);
-      any_fail = true;
+    } else {
+      puts("");
     }
   } while (++iter != end);
   return !any_fail;
