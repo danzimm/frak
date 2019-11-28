@@ -16,14 +16,20 @@
 #include "frak_args.h"
 #include "frakl/tiff.h"
 
+static void fill_random(void* buffer, size_t len) {
+#if __APPLE__
+  arc4random_buf(buffer, len);
+#elif __linux__
+  getrandom(buffer, len);
+#else
+#error Unsupported platform
+#endif
+}
+
 static void noise_generator(struct frak_args const* const args, void* buffer,
                             size_t len) {
   (void)args;
-#if __APPLE__
-  arc4random_buf(buffer, len);
-#elif __LINUX__
-  getrandom(buffer, len);
-#endif
+  fill_random(buffer, len);
 }
 
 static uint32_t max_iteration = 1000;
@@ -118,7 +124,7 @@ static inline void tiff_spec_init_from_frak_args(tiff_spec_t spec,
       spec->palette = calloc(1, sizeof(struct tiff_palette) + colors_byte_len);
       spec->palette->len = 3 * 256;
       if (args->palette == frak_palette_color) {
-        arc4random_buf((void*)spec->palette->colors, colors_byte_len);
+        fill_random((void*)spec->palette->colors, colors_byte_len);
       } else {
         struct frak_color* fcol = args->colors->colors;
         struct tiff_palette_color* pcol = spec->palette->colors;
