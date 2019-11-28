@@ -7,6 +7,17 @@
 #include <stdio.h>
 #include <string.h>
 
+#define asprintf(...)              \
+  do {                             \
+    int a = asprintf(__VA_ARGS__); \
+    (void)a;                       \
+  } while (0)
+#define vasprintf(...)              \
+  do {                              \
+    int a = vasprintf(__VA_ARGS__); \
+    (void)a;                        \
+  } while (0)
+
 char* pu32_parser(const char* arg, void* slot, void* ctx) {
   (void)ctx;
   char* result = NULL;
