@@ -9,9 +9,9 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <zlib.h>
-#if __linux__
-#include <linux/random.h>
-#include <sys/syscall.h>
+
+#if !__APPLE__
+#include <time.h>
 #endif
 
 #include "frak_args.h"
@@ -20,10 +20,21 @@
 static void fill_random(void* buffer, size_t len) {
 #if __APPLE__
   arc4random_buf(buffer, len);
-#elif __linux__
-  syscall(SYS_getrandom, buffer, len, 0);
 #else
-#error Unsupported platform
+  srandom(time(NULL));
+  void* iter = buffer;
+  void* const end = iter + len;
+  if (iter == end) {
+    return;
+  }
+  long int buf;
+  while (iter < end) {
+    buf = random();
+    unsigned len = ((long)sizeof(long int) < (end - iter)) ? sizeof(long int)
+                                                           : (end - iter);
+    memcpy(iter, &buf, len);
+    iter += len;
+  }
 #endif
 }
 
