@@ -2,6 +2,7 @@
 
 #include <frakl/queue.h>
 #include <pthread.h>
+#include <stdint.h>
 
 #include "tests.h"
 
