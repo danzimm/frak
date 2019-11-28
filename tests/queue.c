@@ -44,25 +44,29 @@ TEST(QueueMultiThread) {
   queue_t q = queue_create();
   pthread_t t[5];
   for (unsigned i = 0; i < 5; i++) {
-    pthread_create(&t[i], NULL, (void*)queue_pusher, q);
+    EXPECT_EQ(pthread_create(&t[i], NULL, (void*)queue_pusher, q), 0);
   }
-  for (unsigned i = 5; i != 0; i--) {
-    pthread_join(t[i - 1], NULL);
+  for (unsigned i = 5; i > 0; --i) {
+    EXPECT_EQ(pthread_join(t[i - 1], NULL), 0);
   }
   EXPECT_EQ(queue_get_length(q), 50000);
+
   for (unsigned i = 0; i < 5; i++) {
-    pthread_create(&t[i], NULL,
-                   ((i & 1) != 0) ? (void*)queue_pusher : (void*)queue_popper,
-                   q);
+    EXPECT_EQ(
+        pthread_create(
+            &t[i], NULL,
+            ((i & 1) != 0) ? (void*)queue_pusher : (void*)queue_popper, q),
+        0);
   }
-  for (unsigned i = 5; i != 0; i--) {
+  for (unsigned i = 5; i > 0; --i) {
     pthread_join(t[i - 1], NULL);
   }
   EXPECT_EQ(queue_get_length(q), 40000);
+
   for (unsigned i = 0; i < 4; i++) {
     pthread_create(&t[i], NULL, (void*)queue_popper, q);
   }
-  for (unsigned i = 5; i != 0; i--) {
+  for (unsigned i = 4; i != 0; i--) {
     pthread_join(t[i - 1], NULL);
   }
   EXPECT_TRUE(queue_is_empty(q));
