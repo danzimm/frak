@@ -10,7 +10,8 @@
 #include <unistd.h>
 #include <zlib.h>
 #if __linux__
-#include <sys/random.h>
+#include <linux/random.h>
+#include <sys/syscall.h>
 #endif
 
 #include "frak_args.h"
@@ -20,7 +21,7 @@ static void fill_random(void* buffer, size_t len) {
 #if __APPLE__
   arc4random_buf(buffer, len);
 #elif __linux__
-  getrandom(buffer, len);
+  syscall(SYS_getrandom, buffer, len, 0);
 #else
 #error Unsupported platform
 #endif
