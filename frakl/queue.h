@@ -17,7 +17,15 @@ void queue_destroy(queue_t q);
 
 void queue_push(queue_t q, void* data);
 
-void* queue_pop(queue_t q);
+void queue_pop_n(queue_t q, unsigned n, void* results[]);
+
+static inline void* queue_pop(queue_t q) {
+  void* buffer[1];
+  queue_pop_n(q, 1, buffer);
+  return buffer[0];
+}
+
+void queue_dump(queue_t q);
 
 bool queue_is_empty(queue_t q);
 

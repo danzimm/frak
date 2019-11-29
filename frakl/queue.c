@@ -11,7 +11,7 @@ struct q_cell;
 typedef struct q_cell* q_cell_t;
 
 struct q_cell {
-  _Atomic(void*) data;
+  void* data;
 };
 
 struct queue {
@@ -54,16 +54,30 @@ uintptr_t atomic_fetch_inc_and(_Atomic(uintptr_t) * value, uintptr_t mask) {
 }
 
 void queue_push(queue_t q, void* data) {
-  atomic_store(&q->cells[atomic_fetch_inc_and(&q->head, q->cap_mask)].data,
-               data);
+  q->cells[atomic_fetch_inc_and(&q->head, q->cap_mask)].data = data;
 }
 
-void* queue_pop(queue_t q) {
-  if (atomic_load(&q->tail) == atomic_load(&q->head)) {
-    return NULL;
+void queue_pop_n(queue_t q, unsigned n, void* results[]) {
+  const uintptr_t head = atomic_load(&q->head);
+  uintptr_t tail = atomic_load(&q->tail);
+  if (tail == head) {
+    bzero(results, sizeof(void*) * n);
+    return;
   }
-  return atomic_exchange(
-      &q->cells[atomic_fetch_inc_and(&q->tail, q->cap_mask)].data, NULL);
+  const uintptr_t cap_mask = q->cap_mask;
+  const uintptr_t cap = cap_mask + 1;
+  uintptr_t len;
+  uintptr_t new_tail;
+  do {
+    len = head > tail ? head - tail : cap + head - tail;
+    new_tail = (tail + (n < len ? n : len)) & cap_mask;
+  } while (!atomic_compare_exchange_weak(&q->tail, &tail, new_tail));
+  void** results_iter = results;
+  for (uintptr_t i = tail; i != new_tail; i = ((i + 1) & cap_mask)) {
+    struct q_cell* cell = &q->cells[i];
+    *results_iter++ = cell->data;
+    cell->data = NULL;
+  }
 }
 
 bool queue_is_empty(queue_t q) {
