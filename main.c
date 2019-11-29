@@ -39,15 +39,6 @@ static void fill_random(void* buffer, size_t len) {
 #endif
 }
 
-static uint8_t random_pixel(uint32_t a, uint32_t b, uint32_t c, uint32_t d) {
-  (void)a, (void)b, (void)c, (void)d;
-#if __APPLE__
-  return arc4random();
-#else
-  return random();
-#endif
-}
-
 static uint32_t max_iteration = 1000;
 
 // c = x + iy
@@ -78,12 +69,10 @@ static uint8_t mandlebrot_pixel(uint32_t column, uint32_t row, uint32_t width,
 struct pixel_worker_ctx {
   struct frak_args const* const args;
   void* buffer;
-  uint8_t (*callback)(uint32_t column, uint32_t row, uint32_t width,
-                      uint32_t height);
 };
 
-static void pixel_worker(void** pixels, unsigned n,
-                         struct pixel_worker_ctx* ctx) {
+static void mandlebrot_worker(void** pixels, unsigned n,
+                              struct pixel_worker_ctx* ctx) {
   struct frak_args const* const args = ctx->args;
 
   const uint32_t width = args->width;
@@ -95,7 +84,7 @@ static void pixel_worker(void** pixels, unsigned n,
     uint32_t i = (uint32_t)(pixel - ctx->buffer);
     uint32_t row = i / width;
     uint32_t column = i % width;
-    *(uint8_t*)pixel = ctx->callback(column, row, width, height);
+    *(uint8_t*)pixel = mandlebrot_pixel(column, row, width, height);
   } while (++iter != end);
 }
 
@@ -264,21 +253,8 @@ int main(int argc, const char* argv[]) {
         .args = &args,
         .buffer = data,
     };
-    switch (args.design) {
-      case frak_design_mandlebrot:
-        ctx.callback = mandlebrot_pixel;
-        break;
-      default:
-        fprintf(stderr, "Unexpected design %u, defaulting to noise\n",
-                args.design);
-        /* fallthrough */
-      case frak_design_noise:
-        ctx.callback = (void*)random_pixel;
-        break;
-    }
-
     const uint32_t work_count = args.width * args.height;
-    wq_t wq = wq_create("frak", (void*)pixel_worker, args.worker_count,
+    wq_t wq = wq_create("frak", (void*)mandlebrot_worker, args.worker_count,
                         32 - __builtin_clz(work_count));
     wq_set_worker_cache_size(wq, args.worker_cache_size);
     for (uint32_t i = 0; i < work_count; i++) {

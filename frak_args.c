@@ -31,7 +31,6 @@ static struct arg_enum_opt palette_enum_opts[] = {
 };
 
 static struct arg_enum_opt design_enum_opts[] = {
-    {.option = "noise", .value = frak_design_noise},
     {.option = "mandlebrot", .value = frak_design_mandlebrot},
     {.option = "mand", .value = frak_design_mandlebrot},
     {.option = NULL, .value = 0},
@@ -204,6 +203,9 @@ static int color_sort(void const* a, void const* b) {
 }
 
 char* frak_args_validate(frak_args_t args) {
+  if (args->design == frak_design_default) {
+    args->design = frak_design_mandlebrot;
+  }
   if (args->palette == frak_palette_black_and_white &&
       args->design == frak_design_mandlebrot) {
     return strdup(
@@ -215,9 +217,6 @@ char* frak_args_validate(frak_args_t args) {
     } else if (args->design != frak_design_mandlebrot) {
       return strdup("Cannot specify --max-iter without --design mandlebrot");
     }
-  }
-  if (args->design == frak_design_default) {
-    args->design = frak_design_noise;
   }
   if (args->max_iteration == 0) {
     args->max_iteration = 1000;
