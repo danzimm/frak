@@ -16,6 +16,7 @@
 
 #include "frak_args.h"
 #include "frakl/tiff.h"
+#include "frakl/time_utils.h"
 #include "frakl/wq.h"
 
 static void fill_random(void* buffer, size_t len) {
@@ -188,6 +189,14 @@ int main(int argc, const char* argv[]) {
   size_t len;
   int o_flags = 0;
 
+  struct timespec start;
+  struct timespec init;
+  struct timespec mmap_img;
+  struct timespec meta;
+  struct timespec init_queue;
+  struct timespec compute_data;
+
+  clock_gettime(CLOCK_MONOTONIC_RAW, &start);
   frak_args_init(&args);
   char* err = parse_frak_args(&args, argc, argv);
   if (err || args.print_help) {
@@ -228,12 +237,18 @@ int main(int argc, const char* argv[]) {
       goto out;
     }
   }
+  if (args.stats) {
+    clock_gettime(CLOCK_MONOTONIC_RAW, &init);
+  }
 
   buf = mmap(NULL, len, PROT_WRITE | PROT_READ, MAP_FILE | MAP_SHARED, fd, 0);
   if (!buf || buf == MAP_FAILED) {
     perror("mmap");
     rc = 1;
     goto out;
+  }
+  if (args.stats) {
+    clock_gettime(CLOCK_MONOTONIC_RAW, &mmap_img);
   }
 
   if (args.palette_only) {
@@ -242,8 +257,16 @@ int main(int argc, const char* argv[]) {
       fprintf(stderr, "Failed to update color palette: %s\n", err);
       rc = 1;
     }
+    if (args.stats) {
+      clock_gettime(CLOCK_MONOTONIC_RAW, &meta);
+      clock_gettime(CLOCK_MONOTONIC_RAW, &init_queue);
+      clock_gettime(CLOCK_MONOTONIC_RAW, &compute_data);
+    }
   } else {
     data = tiff_spec_write_metadata(&spec, buf);
+    if (args.stats) {
+      clock_gettime(CLOCK_MONOTONIC_RAW, &meta);
+    }
 
     struct pixel_worker_ctx ctx = {
         .args = &args,
@@ -253,11 +276,19 @@ int main(int argc, const char* argv[]) {
     wq_t wq = wq_create("frak", (void*)mandlebrot_worker, args.worker_count,
                         32 - __builtin_clz(work_count));
     wq_set_worker_cache_size(wq, args.worker_cache_size);
+
     for (uint32_t i = 0; i < work_count; i++) {
       wq_push(wq, data + i);
     }
+    if (args.stats) {
+      clock_gettime(CLOCK_MONOTONIC_RAW, &init_queue);
+    }
+
     wq_start(wq, &ctx);
     wq_wait(wq);
+    if (args.stats) {
+      clock_gettime(CLOCK_MONOTONIC_RAW, &compute_data);
+    }
     wq_destroy(wq);
   }
 
@@ -273,6 +304,20 @@ out:
   }
   if (spec.palette) {
     free(spec.palette);
+  }
+  if (args.stats) {
+    timespec_minus(&compute_data, &init_queue);
+    timespec_minus(&init_queue, &meta);
+    timespec_minus(&meta, &mmap_img);
+    timespec_minus(&mmap_img, &init);
+    timespec_minus(&init, &start);
+
+#define milli(ts) (ts.tv_sec * 1000 + ts.tv_nsec / 1000000)
+    printf(
+        "Timing:\n  init: %3ld\n  mmap: %3ld\n  meta: %3ld\n  qini: %3ld\n "
+        "comp: %3ld\n",
+        milli(init), milli(mmap_img), milli(meta), milli(init_queue),
+        milli(compute_data));
   }
   return rc;
 }
