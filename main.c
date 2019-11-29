@@ -167,16 +167,12 @@ static inline void tiff_spec_init_from_frak_args(tiff_spec_t spec,
         } while ((++to_fcol) != end_fcol);
       }
     } break;
-    case frak_palette_gray:
-      spec->type = tiff_gray;
-      spec->palette = NULL;
-      break;
     default:
       fprintf(stderr, "Unknown palette type %d, defaulting to bilevel\n",
               args->palette);
       /* fallthrough */
-    case frak_palette_black_and_white:
-      spec->type = tiff_bilevel;
+    case frak_palette_gray:
+      spec->type = tiff_gray;
       spec->palette = NULL;
       break;
   }

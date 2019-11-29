@@ -16,10 +16,6 @@ void frak_usage(int code) {
 }
 
 static struct arg_enum_opt palette_enum_opts[] = {
-    {.option = "b", .value = frak_palette_black_and_white},
-    {.option = "bw", .value = frak_palette_black_and_white},
-    {.option = "bilevel", .value = frak_palette_black_and_white},
-    {.option = "blackwhite", .value = frak_palette_black_and_white},
     {.option = "g", .value = frak_palette_gray},
     {.option = "gray", .value = frak_palette_gray},
     {.option = "grey", .value = frak_palette_gray},
@@ -206,11 +202,6 @@ char* frak_args_validate(frak_args_t args) {
   if (args->design == frak_design_default) {
     args->design = frak_design_mandlebrot;
   }
-  if (args->palette == frak_palette_black_and_white &&
-      args->design == frak_design_mandlebrot) {
-    return strdup(
-        "Mandlebrots cannot be generated with a black & white palette");
-  }
   if (args->max_iteration != 0) {
     if (args->design == frak_design_default) {
       args->design = frak_design_mandlebrot;
@@ -230,7 +221,7 @@ char* frak_args_validate(frak_args_t args) {
     }
   }
   if (args->palette == frak_palette_default) {
-    args->palette = frak_palette_black_and_white;
+    args->palette = frak_palette_gray;
   } else if (args->palette == frak_palette_custom) {
     if (!args->colors) {
       return strdup("Must specify --color with --palette custom");
