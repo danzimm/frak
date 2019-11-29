@@ -14,7 +14,6 @@ struct wq {
   queue_t queue;
   size_t worker_count;
   pthread_t* workers;
-  _Atomic(uintptr_t) work_count;
   void* ctx;
 };
 
@@ -36,7 +35,6 @@ wq_t wq_create(const char* name, size_t worker_count, size_t queue_cap_shift) {
   }
   res->worker_count = worker_count;
   res->workers = NULL;
-  atomic_init(&res->work_count, 0);
   res->ctx = NULL;
   return res;
 }
@@ -54,8 +52,7 @@ static void* wq_worker(wq_t wq) {
   queue_t q = wq->queue;
   void* ctx = wq->ctx;
   struct wq_item* item;
-  while (atomic_fetch_sub(&wq->work_count, 1) != 0 &&
-         (item = queue_pop(q)) != NULL) {
+  while ((item = queue_pop(q)) != NULL) {
     item->cb(item->work, ctx);
     free(item);
   }
@@ -69,7 +66,6 @@ void wq_start(wq_t wq, void* ctx) {
   const size_t worker_count = wq->worker_count;
   wq->workers = calloc(worker_count, sizeof(pthread_t));
   wq->ctx = ctx;
-  atomic_store(&wq->work_count, queue_get_length(wq->queue));
   for (size_t i = 0; i < worker_count; i++) {
     pthread_create(&wq->workers[i], NULL, (void*)&wq_worker, wq);
   }
@@ -80,7 +76,6 @@ void wq_wait(wq_t wq) {
   for (size_t i = 0; i < worker_count; i++) {
     pthread_join(wq->workers[i], NULL);
   }
-  atomic_store(&wq->work_count, 0);
   free(wq->workers);
   wq->workers = NULL;
 }
