@@ -9,5 +9,5 @@ target_compile_options(frak_tests PRIVATE ${FRAK_CFLAGS})
 target_include_directories(frak_tests PRIVATE ${frak_SOURCE_DIR})
 target_link_libraries(frak_tests z m pthread frakl)
 
-add_custom_target(test $<TARGET_FILE:frak_tests>)
-add_dependencies(test frak_tests)
+add_custom_target(t $<TARGET_FILE:frak_tests>)
+add_dependencies(t frak_tests)

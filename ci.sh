@@ -7,7 +7,7 @@ run_tests() {
   shift
   rm -rf "$build_dir" && mkdir "$build_dir" && pushd "$build_dir" && \
     cmake ../ -G 'Unix Makefiles' -DCMAKE_BUILD_TYPE=Release $@ && \
-    make && make test && \
+    make && make t && \
     popd
 }
 
