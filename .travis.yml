@@ -4,4 +4,4 @@ compiler:
 os:
   - linux
   - osx
-script: ci.sh
+script: sh ci.sh
