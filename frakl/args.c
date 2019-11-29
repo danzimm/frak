@@ -391,7 +391,7 @@ print_opts:
     if (print_required ^ iter->required) {
       continue;
     }
-    if (*iter->flag == '-') {
+    if (*iter->flag == '-' && iter->takes_arg) {
       asprintf_padded(&tmp, arg_width, "%s [%s]", iter->flag,
                       skip_dash(iter->flag));
     } else {
