@@ -5,6 +5,7 @@
 #include <pthread.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <unistd.h>
 
 #include "tests.h"
 
@@ -60,10 +61,11 @@ TEST(Workqueue) {
 
   // Note that serial took longer than concurrent, i.e. wq works!
 #if !defined(__has_feature) || !__has_feature(thread_sanitizer)
-  EXPECT_TRUE(delta.tv_sec >= 0 && delta.tv_nsec >= 0);
+  EXPECT_TRUE(sysconf(_SC_NPROCESSORS_ONLN) <= 1 ||
+              (delta.tv_sec >= 0 && delta.tv_nsec >= 0));
+#endif
   printf("  Serial vs Concurrent: %3ldms vs %3ldms\n",
          serial.tv_sec * 1000 + serial.tv_nsec / 1000000,
          concurrent.tv_sec * 1000 + concurrent.tv_nsec / 1000000);
-#endif
   wq_destroy(wq);
 }
