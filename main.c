@@ -16,6 +16,7 @@
 
 #include "frak_args.h"
 #include "frakl/tiff.h"
+#include "frakl/wq.h"
 
 static void fill_random(void* buffer, size_t len) {
 #if __APPLE__
@@ -38,10 +39,13 @@ static void fill_random(void* buffer, size_t len) {
 #endif
 }
 
-static void noise_generator(struct frak_args const* const args, void* buffer,
-                            size_t len) {
-  (void)args;
-  fill_random(buffer, len);
+static uint8_t random_pixel(uint32_t a, uint32_t b, uint32_t c, uint32_t d) {
+  (void)a, (void)b, (void)c, (void)d;
+#if __APPLE__
+  return arc4random();
+#else
+  return random();
+#endif
 }
 
 static uint32_t max_iteration = 1000;
@@ -49,13 +53,18 @@ static uint32_t max_iteration = 1000;
 // c = x + iy
 // m_c(z) = z^2 + c
 //        = z_x^2 - z_y^2 + x + i(2z_x * z_y + y)
-static uint8_t compute_mandlebrot_pixel(double x, double y) {
+static uint8_t mandlebrot_pixel(uint32_t column, uint32_t row, uint32_t width,
+                                uint32_t height) {
+  double x = 4.0 * (double)column / (double)width - 2.0;
+  double y = 4.0 * (double)row / (double)height - 2.0;
+
   double zx = x;
   double zy = y;
   double tmp;
   double magsq = zx * zx + zy * zy;
   uint32_t result = 0;
   const uint32_t max = max_iteration;
+
   while (magsq <= 4.0 && result != max) {
     tmp = zx * zx - zy * zy + x;
     zy = 2 * zx * zy + y;
@@ -66,19 +75,20 @@ static uint8_t compute_mandlebrot_pixel(double x, double y) {
   return (255 * result) / max_iteration;
 }
 
-static void mandlebrot_generator(struct frak_args const* const args,
-                                 void* buffer, size_t len) {
-  if (args->palette == frak_palette_black_and_white) {
-    fprintf(stderr, "Warning: mandlebrot doesn't support bilevel images\n");
-    return;
-  }
-  for (size_t i = 0; i < len; i++) {
-    uint32_t row = i / args->width;
-    uint32_t column = i % args->width;
-    double x = 4.0 * (double)column / (double)args->width - 2.0;
-    double y = 4.0 * (double)row / (double)args->height - 2.0;
-    *(uint8_t*)(buffer + i) = compute_mandlebrot_pixel(x, y);
-  }
+struct pixel_worker_ctx {
+  struct frak_args const* const args;
+  void* buffer;
+  uint8_t (*callback)(uint32_t column, uint32_t row, uint32_t width,
+                      uint32_t height);
+};
+
+static void pixel_worker(void* pixel, struct pixel_worker_ctx* ctx) {
+  uint32_t i = (uint32_t)(pixel - ctx->buffer);
+  struct frak_args const* const args = ctx->args;
+
+  uint32_t row = i / args->width;
+  uint32_t column = i % args->width;
+  *(uint8_t*)pixel = ctx->callback(column, row, args->width, args->height);
 }
 
 // n-atic:
@@ -240,20 +250,30 @@ int main(int argc, const char* argv[]) {
   } else {
     data = tiff_spec_write_metadata(&spec, buf);
 
-    void (*generator)(struct frak_args const* const, void*, size_t);
+    struct pixel_worker_ctx ctx = {
+        .args = &args,
+        .buffer = data,
+    };
     switch (args.design) {
       case frak_design_mandlebrot:
-        generator = mandlebrot_generator;
+        ctx.callback = mandlebrot_pixel;
         break;
       default:
         fprintf(stderr, "Unexpected design %u, defaulting to noise\n",
                 args.design);
         /* fallthrough */
       case frak_design_noise:
-        generator = noise_generator;
+        ctx.callback = (void*)random_pixel;
         break;
     }
-    generator(&args, data, len - (data - buf));
+
+    wq_t wq = wq_create("frak", 0, 32 - __builtin_clz(len));
+    for (uint32_t i = 0; i < len; i++) {
+      wq_push(wq, (void*)pixel_worker, data + i);
+    }
+    wq_start(wq, &ctx);
+    wq_wait(wq);
+    wq_destroy(wq);
   }
 
 out:
