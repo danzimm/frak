@@ -44,11 +44,12 @@ typedef struct frak_args {
   double curve;
   bool palette_only;
   uint32_t worker_count;
+  bool print_help;
 } * frak_args_t;
 
 extern struct arg_spec const* const frak_arg_specs;
 
-void frak_usage(void) __attribute__((noreturn));
+void frak_usage(int code) __attribute__((noreturn));
 void frak_args_init(frak_args_t args);
 char* frak_args_validate(frak_args_t args);
 

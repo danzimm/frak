@@ -197,10 +197,12 @@ int main(int argc, const char* argv[]) {
 
   frak_args_init(&args);
   char* err = parse_frak_args(&args, argc, argv);
-  if (err) {
-    fprintf(stderr, "%s\n\n", err);
-    free(err);
-    frak_usage();
+  if (err || args.print_help) {
+    if (!args.print_help) {
+      fprintf(stderr, "%s\n\n", err);
+      free(err);
+    }
+    frak_usage(args.print_help ? 0 : 1);
   }
   max_iteration = args.max_iteration;
 

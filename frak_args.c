@@ -7,12 +7,12 @@
 #include <stdlib.h>
 #include <string.h>
 
-void frak_usage() {
+void frak_usage(int code) {
   static char const* const cmd = "frak";
   char* usage = create_usage(cmd, "a tiff generator", frak_arg_specs);
   fprintf(stderr, "%s", usage);
   free(usage);
-  exit(1);
+  exit(code);
 }
 
 static struct arg_enum_opt palette_enum_opts[] = {
@@ -166,6 +166,12 @@ struct arg_spec const* const frak_arg_specs = (struct arg_spec[]){
      .offset = offsetof(struct frak_args, worker_count),
      .help = "Configure the number of workers to use when running. Defaults to"
              " 4/3 * number of active processors (specify 0 for this default)"},
+    {.flag = "--help",
+     .takes_arg = false,
+     .required = false,
+     .parser = bool_parser,
+     .offset = offsetof(struct frak_args, print_help),
+     .help = "Show this help page"},
     {.flag = NULL},
 };
 
@@ -181,6 +187,7 @@ void frak_args_init(frak_args_t args) {
   args->curve = 1.0;
   args->palette_only = false;
   args->worker_count = 0;
+  args->print_help = false;
 }
 
 static int color_sort(void const* a, void const* b) {
