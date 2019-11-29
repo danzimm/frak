@@ -88,6 +88,7 @@ bool run_tests(void) {
     } else {
       puts("");
     }
+    any_fail = any_fail || !success;
   } while (++iter != end);
   return !any_fail;
 }
