@@ -13,3 +13,5 @@ run_tests() {
 
 run_tests build
 run_tests asan -DFRAK_SAN_TYPE=address
+run_tests tsan -DFRAK_SAN_TYPE=thread
+run_tests msan -DFRAK_SAN_TYPE=memory
