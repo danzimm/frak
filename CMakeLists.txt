@@ -15,6 +15,7 @@ if (FRAK_SAN_TYPE)
   set(SAN_FLAGS "-fsanitize=${FRAK_SAN_TYPE}")
   set(CMAKE_EXE_LINKER_FLAGS ${SAN_FLAGS})
   set(CMAKE_SHARED_LINKER_FLAGS ${SAN_FLAGS})
+  set(OPT_FLAGS ${OPT_FLAGS} -g)
 endif()
 
 set(FRAK_CFLAGS -Wall -Werror -Wextra -D_GNU_SOURCE=1 ${OPT_FLAGS} ${SAN_FLAGS})
