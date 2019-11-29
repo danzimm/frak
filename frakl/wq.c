@@ -3,7 +3,6 @@
 #include "wq.h"
 
 #include <pthread.h>
-#include <stdatomic.h>
 #include <string.h>
 #include <unistd.h>
 
