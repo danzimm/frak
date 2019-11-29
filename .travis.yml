@@ -4,4 +4,4 @@ compiler:
 os:
   - linux
   - osx
-script: mkdir build && cd build && cmake ../ -G 'Unix Makefiles' -DCMAKE_BUILD_TYPE=Release && make && ./tests/frak_tests
+script: mkdir build && cd build && cmake ../ -G 'Unix Makefiles' -DCMAKE_BUILD_TYPE=Release && make && make test
