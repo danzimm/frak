@@ -267,7 +267,7 @@ int main(int argc, const char* argv[]) {
         break;
     }
 
-    wq_t wq = wq_create("frak", 0, 32 - __builtin_clz(len));
+    wq_t wq = wq_create("frak", args.worker_count, 32 - __builtin_clz(len));
     for (uint32_t i = 0; i < len; i++) {
       wq_push(wq, (void*)pixel_worker, data + i);
     }

@@ -43,6 +43,7 @@ typedef struct frak_args {
   struct frak_colors* colors;
   double curve;
   bool palette_only;
+  uint32_t worker_count;
 } * frak_args_t;
 
 extern struct arg_spec const* const frak_arg_specs;

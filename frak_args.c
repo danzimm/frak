@@ -159,6 +159,13 @@ struct arg_spec const* const frak_arg_specs = (struct arg_spec[]){
      .parser = bool_parser,
      .offset = offsetof(struct frak_args, palette_only),
      .help = "In place change the color palette of an image"},
+    {.flag = "-j",
+     .takes_arg = true,
+     .required = false,
+     .parser = pu32_parser,
+     .offset = offsetof(struct frak_args, worker_count),
+     .help = "Configure the number of workers to use when running. Defaults to"
+             " 4/3 * number of active processors (specify 0 for this default)"},
     {.flag = NULL},
 };
 
@@ -173,6 +180,7 @@ void frak_args_init(frak_args_t args) {
   args->colors = NULL;
   args->curve = 1.0;
   args->palette_only = false;
+  args->worker_count = 0;
 }
 
 static int color_sort(void const* a, void const* b) {
