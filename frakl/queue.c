@@ -84,6 +84,16 @@ bool queue_is_empty(queue_t q) {
   return atomic_load(&q->head) == atomic_load(&q->tail);
 }
 
+void queue_dump(queue_t q) {
+  printf("Dumping queue %p\n", q);
+  uintptr_t head = q->head;
+  uintptr_t tail = q->tail;
+  uintptr_t cap_mask = q->cap_mask;
+  for (uintptr_t i = tail; i != head; i = ((i + 1) & cap_mask)) {
+    printf("  At %lu (%p): %p\n", i, &q->cells[i], q->cells[i].data);
+  }
+}
+
 unsigned queue_get_length(queue_t q) {
   uintptr_t head = atomic_load(&q->head);
   uintptr_t tail = atomic_load(&q->tail);
