@@ -35,8 +35,11 @@ queue_t queue_create(uint8_t cap_pow) {
 }
 
 void queue_destroy(queue_t q) {
-  if (atomic_load(&q->head) != atomic_load(&q->tail)) {
-    fprintf(stderr, "Warning: destroying non-empty queue %p\n", q);
+  uintptr_t head = atomic_load(&q->head);
+  uintptr_t tail = atomic_load(&q->tail);
+  if (head != tail) {
+    fprintf(stderr, "Warning: destroying non-empty queue %p (%lx -> %lx)\n", q,
+            tail, head);
   }
   free(q);
 }
@@ -56,6 +59,9 @@ void queue_push(queue_t q, void* data) {
 }
 
 void* queue_pop(queue_t q) {
+  if (atomic_load(&q->tail) == atomic_load(&q->head)) {
+    return NULL;
+  }
   return atomic_exchange(
       &q->cells[atomic_fetch_inc_and(&q->tail, q->cap_mask)].data, NULL);
 }
