@@ -16,10 +16,6 @@ void frak_usage(int code) {
 }
 
 static struct arg_enum_opt palette_enum_opts[] = {
-    {.option = "b", .value = frak_palette_black_and_white},
-    {.option = "bw", .value = frak_palette_black_and_white},
-    {.option = "bilevel", .value = frak_palette_black_and_white},
-    {.option = "blackwhite", .value = frak_palette_black_and_white},
     {.option = "g", .value = frak_palette_gray},
     {.option = "gray", .value = frak_palette_gray},
     {.option = "grey", .value = frak_palette_gray},
@@ -31,7 +27,6 @@ static struct arg_enum_opt palette_enum_opts[] = {
 };
 
 static struct arg_enum_opt design_enum_opts[] = {
-    {.option = "noise", .value = frak_design_noise},
     {.option = "mandlebrot", .value = frak_design_mandlebrot},
     {.option = "mand", .value = frak_design_mandlebrot},
     {.option = NULL, .value = 0},
@@ -56,7 +51,7 @@ static bool cp_num_bnd(const char** iter, char* buf, unsigned cnt, char c) {
     return false;
   }
   liter++;
-  buf[1] = '\0';
+  buf[0] = '\0';
   *iter = liter;
   return true;
 }
@@ -172,6 +167,12 @@ struct arg_spec const* const frak_arg_specs = (struct arg_spec[]){
      .parser = bool_parser,
      .offset = offsetof(struct frak_args, print_help),
      .help = "Show this help page"},
+    {.flag = "--worker-cache-size",
+     .takes_arg = true,
+     .required = false,
+     .parser = pu32_parser,
+     .offset = offsetof(struct frak_args, worker_cache_size),
+     .help = "The number of pixels to place into a single work item"},
     {.flag = NULL},
 };
 
@@ -188,6 +189,7 @@ void frak_args_init(frak_args_t args) {
   args->palette_only = false;
   args->worker_count = 0;
   args->print_help = false;
+  args->worker_cache_size = 0;
 }
 
 static int color_sort(void const* a, void const* b) {
@@ -197,10 +199,8 @@ static int color_sort(void const* a, void const* b) {
 }
 
 char* frak_args_validate(frak_args_t args) {
-  if (args->palette == frak_palette_black_and_white &&
-      args->design == frak_design_mandlebrot) {
-    return strdup(
-        "Mandlebrots cannot be generated with a black & white palette");
+  if (args->design == frak_design_default) {
+    args->design = frak_design_mandlebrot;
   }
   if (args->max_iteration != 0) {
     if (args->design == frak_design_default) {
@@ -208,9 +208,6 @@ char* frak_args_validate(frak_args_t args) {
     } else if (args->design != frak_design_mandlebrot) {
       return strdup("Cannot specify --max-iter without --design mandlebrot");
     }
-  }
-  if (args->design == frak_design_default) {
-    args->design = frak_design_noise;
   }
   if (args->max_iteration == 0) {
     args->max_iteration = 1000;
@@ -224,7 +221,7 @@ char* frak_args_validate(frak_args_t args) {
     }
   }
   if (args->palette == frak_palette_default) {
-    args->palette = frak_palette_black_and_white;
+    args->palette = frak_palette_gray;
   } else if (args->palette == frak_palette_custom) {
     if (!args->colors) {
       return strdup("Must specify --color with --palette custom");
@@ -245,6 +242,9 @@ char* frak_args_validate(frak_args_t args) {
           "Can only in place change palette if color palette is"
           " being used (--palette color/custom)");
     }
+  }
+  if (!args->worker_cache_size) {
+    args->worker_cache_size = (uint32_t)-1;
   }
   return NULL;
 }

@@ -15,7 +15,6 @@ enum frak_palette {
 };
 
 enum frak_design {
-  frak_design_noise = 0,
   frak_design_mandlebrot = 1,
   frak_design_default = 2,
 };
@@ -45,6 +44,7 @@ typedef struct frak_args {
   bool palette_only;
   uint32_t worker_count;
   bool print_help;
+  uint32_t worker_cache_size;
 } * frak_args_t;
 
 extern struct arg_spec const* const frak_arg_specs;

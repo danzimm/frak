@@ -8,7 +8,7 @@ endif()
 if(${CMAKE_BUILD_TYPE} STREQUAL "Debug")
   set(OPT_FLAGS -O0 -g)
 else()
-  set(OPT_FLAGS -O3)
+  set(OPT_FLAGS -O3 -g)
 endif()
 
 if (FRAK_SAN_TYPE)

@@ -3,12 +3,13 @@
 #pragma once
 
 #include <stdbool.h>
+#include <stdio.h>
 
 typedef void (*test_cb_t)(void);
 
 void register_test(const char* name, test_cb_t test, bool expect_fail,
                    const char* file, int line);
-bool run_tests(void);
+bool run_tests(const char* filter);
 void fail(const char* check, const char* file, int line);
 
 #define TEST_(name, expect_fail)                                         \

@@ -7,6 +7,7 @@
 #include <setjmp.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 typedef struct test {
   const char* name;
@@ -55,7 +56,7 @@ void register_test(const char* name, test_cb_t cb, bool expect_fail,
   new_test->line = line;
 }
 
-bool run_tests(void) {
+bool run_tests(const char* filter) {
   volatile bool any_fail = false;
   struct test const* volatile iter = g_test_list.tests;
   struct test const* const volatile end = iter + g_test_list.length;
@@ -66,6 +67,9 @@ bool run_tests(void) {
   volatile struct timespec tstart;
   volatile struct timespec tend;
   do {
+    if (filter && strcmp(filter, iter->name) != 0) {
+      continue;
+    }
     g_failure.check = iter->name;
     g_failure.file = iter->file;
     g_failure.line = iter->line;
