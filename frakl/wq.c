@@ -90,6 +90,7 @@ void wq_destroy(wq_t wq) {
   if (wq->workers) {
     free(wq->workers);
   }
+  free(wq);
 }
 
 bool wq_is_running(wq_t wq) { return wq->workers != NULL; }
