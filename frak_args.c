@@ -56,7 +56,7 @@ static bool cp_num_bnd(const char** iter, char* buf, unsigned cnt, char c) {
     return false;
   }
   liter++;
-  buf[1] = '\0';
+  buf[0] = '\0';
   *iter = liter;
   return true;
 }
