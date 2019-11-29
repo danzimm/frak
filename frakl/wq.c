@@ -57,6 +57,7 @@ static void* wq_worker(wq_t wq) {
   while (atomic_fetch_sub(&wq->work_count, 1) != 0 &&
          (item = queue_pop(q)) != NULL) {
     item->cb(item->work, ctx);
+    free(item);
   }
   return NULL;
 }
