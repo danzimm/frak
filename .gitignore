@@ -15,6 +15,10 @@ CTestTestfile.cmake
 _deps
 build
 debug
+asan
+lsan
+tsan
+msan
 
 ### CMake Patch ###
 # External projects
