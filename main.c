@@ -87,8 +87,9 @@ static void pixel_worker(void* pixel, struct pixel_worker_ctx* ctx) {
   struct frak_args const* const args = ctx->args;
 
   uint32_t row = i / args->width;
-  uint32_t column = i % args->width;
-  *(uint8_t*)pixel = ctx->callback(column, row, args->width, args->height);
+  for (unsigned j = 0; j < args->width; j++) {
+    *(uint8_t*)(pixel + j) = ctx->callback(j, row, args->width, args->height);
+  }
 }
 
 // n-atic:
@@ -269,9 +270,10 @@ int main(int argc, const char* argv[]) {
         break;
     }
 
-    wq_t wq = wq_create("frak", args.worker_count, 32 - __builtin_clz(len));
-    for (uint32_t i = 0; i < len; i++) {
-      wq_push(wq, (void*)pixel_worker, data + i);
+    wq_t wq =
+        wq_create("frak", args.worker_count, 32 - __builtin_clz(args.height));
+    for (uint32_t i = 0; i < args.height; i++) {
+      wq_push(wq, (void*)pixel_worker, data + args.width * i);
     }
     wq_start(wq, &ctx);
     wq_wait(wq);
