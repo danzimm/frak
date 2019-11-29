@@ -11,7 +11,12 @@ else()
   set(OPT_FLAGS -O3)
 endif()
 
-set(FRAK_CFLAGS -Wall -Werror -Wextra -D_GNU_SOURCE=1 ${OPT_FLAGS})
+if (FRAK_SAN_TYPE)
+  set(SAN_FLAGS "-fsanitize=${FRAK_SAN_TYPE}")
+  add_link_options(${SAN_FLAGS})
+endif()
+
+set(FRAK_CFLAGS -Wall -Werror -Wextra -D_GNU_SOURCE=1 ${OPT_FLAGS} ${SAN_FLAGS})
 
 add_subdirectory(frakl)
 
