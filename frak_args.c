@@ -173,6 +173,18 @@ struct arg_spec const* const frak_arg_specs = (struct arg_spec[]){
      .parser = pu32_parser,
      .offset = offsetof(struct frak_args, worker_cache_size),
      .help = "The number of pixels to place into a single work item"},
+    {.flag = "--randomize",
+     .takes_arg = false,
+     .required = false,
+     .parser = bool_parser,
+     .offset = offsetof(struct frak_args, randomize),
+     .help = "Attempt to randomize the order that pixels are computed in"},
+    {.flag = "--stats",
+     .takes_arg = false,
+     .required = false,
+     .parser = bool_parser,
+     .offset = offsetof(struct frak_args, stats),
+     .help = "Print stats about each phase of running"},
     {.flag = NULL},
 };
 
@@ -190,6 +202,8 @@ void frak_args_init(frak_args_t args) {
   args->worker_count = 0;
   args->print_help = false;
   args->worker_cache_size = 0;
+  args->randomize = false;
+  args->stats = false;
 }
 
 static int color_sort(void const* a, void const* b) {
