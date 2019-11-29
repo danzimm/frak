@@ -3,6 +3,7 @@
 #pragma once
 
 #include <stdbool.h>
+#include <stdio.h>
 
 typedef void (*test_cb_t)(void);
 
