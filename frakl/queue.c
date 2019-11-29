@@ -60,15 +60,14 @@ void queue_push(queue_t q, void* data) {
 unsigned queue_pop_n(queue_t q, unsigned n, void* results[]) {
   const uintptr_t head = atomic_load(&q->head);
   uintptr_t tail = atomic_load(&q->tail);
-  if (tail == head) {
-    bzero(results, sizeof(void*) * n);
-    return 0;
-  }
   const uintptr_t cap_mask = q->cap_mask;
   const uintptr_t cap = cap_mask + 1;
   uintptr_t len;
   uintptr_t new_tail;
   do {
+    if (tail == head) {
+      return 0;
+    }
     len = head > tail ? head - tail : cap + head - tail;
     new_tail = (tail + (n < len ? n : len)) & cap_mask;
   } while (!atomic_compare_exchange_weak(&q->tail, &tail, new_tail));
