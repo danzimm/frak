@@ -2,93 +2,72 @@
 
 #include "queue.h"
 
+#include <assert.h>
 #include <stdatomic.h>
 #include <stdio.h>
 
 struct q_cell;
 typedef struct q_cell* q_cell_t;
-typedef _Atomic(q_cell_t) q_cell_t_a;
 
 struct q_cell {
-  q_cell_t next;
   void* data;
 };
 
 struct queue {
-  q_cell_t_a head;
-  q_cell_t_a tail;
+  _Atomic(uintptr_t) head;
+  _Atomic(uintptr_t) tail;
+  uintptr_t cap_mask;
+  struct q_cell cells[];
 };
 
-queue_t queue_create(void) { return calloc(1, sizeof(struct queue)); }
+queue_t queue_create(uint8_t cap_pow) {
+  if (cap_pow == 0 || cap_pow > 31) {
+    cap_pow = 16;
+  }
+  size_t cap = 1 << cap_pow;
+  queue_t res = malloc(sizeof(struct queue) + cap * sizeof(struct q_cell));
+  res->cap_mask = cap - 1;
+  atomic_init(&res->head, 0);
+  atomic_init(&res->tail, 0);
+  return res;
+}
 
 void queue_destroy(queue_t q) {
-  q_cell_t cell = atomic_load(&q->tail);
-  if (cell != NULL) {
+  if (atomic_load(&q->head) != atomic_load(&q->tail)) {
     fprintf(stderr, "Warning: destroying non-empty queue %p\n", q);
-    q_cell_t next;
-    do {
-      next = cell->next;
-      free(cell);
-      cell = next;
-    } while (cell != NULL);
   }
   free(q);
 }
 
-void queue_push(queue_t q, void* data) {
-  // Create the new cell
-  q_cell_t cell = malloc(sizeof(struct q_cell));
-  cell->data = data;
-  cell->next = NULL;
-
-  q_cell_t tail = NULL;
-  if (!atomic_compare_exchange_strong(&q->tail, &tail, cell)) {
-    q_cell_t prev_head = atomic_load(&q->head);
-    // If somehow we got ahead of the thread that set tail then we need to wait
-    // for it to set head as well.
-    if (!prev_head) {
-      while ((prev_head = atomic_load(&q->head)) == NULL)
-        ;
-    }
-    while (!atomic_compare_exchange_weak(&q->head, &prev_head, cell))
-      ;
-    // Since q->head is set atomically we have a "lock" on prev_head here.
-    prev_head->next = cell;
-  } else {
-    atomic_store(&q->head, cell);
+uintptr_t atomic_fetch_inc_and(_Atomic(uintptr_t) * value, uintptr_t mask) {
+  uintptr_t val = atomic_fetch_add(value, 1) + 1;
+  if (val != (val & mask)) {
+    uintptr_t unused = atomic_fetch_and(value, mask);
+    (void)unused;
   }
+  return (val - 1) & mask;
+}
+
+void queue_push(queue_t q, void* data) {
+  q->cells[atomic_fetch_inc_and(&q->head, q->cap_mask)].data = data;
 }
 
 void* queue_pop(queue_t q) {
-  q_cell_t pop;
-  q_cell_t old_head;
-  do {
-    pop = atomic_load(&q->tail);
-    if (!pop->next) {
-      old_head = atomic_load(&q->head);
-    }
-  } while (pop && !atomic_compare_exchange_weak(&q->tail, &pop, pop->next));
-  if (!pop) {
-    return NULL;
-  }
-  if (!pop->next) {
-    atomic_compare_exchange_strong(&q->head, &old_head, NULL);
-  }
-  void* data = pop->data;
-  free(pop);
-  return data;
+  return q->cells[atomic_fetch_inc_and(&q->tail, q->cap_mask)].data;
 }
 
 bool queue_is_empty(queue_t q) {
-  return atomic_load(&q->tail) == NULL && atomic_load(&q->head) == NULL;
+  return atomic_load(&q->head) == atomic_load(&q->tail);
 }
 
 unsigned queue_get_length(queue_t q) {
-  unsigned i = 0;
-  q_cell_t cell = atomic_load(&q->tail);
-  while (cell) {
-    i += 1;
-    cell = cell->next;
+  uintptr_t head = atomic_load(&q->head);
+  uintptr_t tail = atomic_load(&q->tail);
+  if (head >= tail) {
+    return head - tail;
+  } else {
+    return (q->cap_mask + 1) + head - tail;
   }
-  return i;
 }
+
+size_t queue_get_capacity(queue_t q) { return q->cap_mask; }

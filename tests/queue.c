@@ -7,22 +7,90 @@
 #include "tests.h"
 
 TEST(Queue) {
-  queue_t q = queue_create();
-  queue_push(q, (void*)0x1);
-  queue_push(q, (void*)0x2);
-  queue_push(q, (void*)0x3);
-  queue_push(q, (void*)0x4);
-  EXPECT_EQ(queue_get_length(q), 4);
-  EXPECT_FALSE(queue_is_empty(q));
-  EXPECT_EQ(queue_pop(q), (void*)0x1);
-  EXPECT_FALSE(queue_is_empty(q));
-  EXPECT_EQ(queue_pop(q), (void*)0x2);
-  EXPECT_FALSE(queue_is_empty(q));
-  EXPECT_EQ(queue_pop(q), (void*)0x3);
-  EXPECT_FALSE(queue_is_empty(q));
-  EXPECT_EQ(queue_pop(q), (void*)0x4);
-  EXPECT_TRUE(queue_is_empty(q));
+  queue_t q = queue_create(2);
   EXPECT_EQ(queue_get_length(q), 0);
+  EXPECT_TRUE(queue_is_empty(q));
+
+  queue_push(q, (void*)0x1);
+  EXPECT_EQ(queue_get_length(q), 1);
+  EXPECT_FALSE(queue_is_empty(q));
+
+  queue_push(q, (void*)0x2);
+  EXPECT_EQ(queue_get_length(q), 2);
+  EXPECT_FALSE(queue_is_empty(q));
+
+  queue_push(q, (void*)0x3);
+  EXPECT_EQ(queue_get_length(q), 3);
+  EXPECT_FALSE(queue_is_empty(q));
+
+  EXPECT_EQ(queue_pop(q), (void*)0x1);
+  EXPECT_EQ(queue_get_length(q), 2);
+  EXPECT_FALSE(queue_is_empty(q));
+
+  EXPECT_EQ(queue_pop(q), (void*)0x2);
+  EXPECT_EQ(queue_get_length(q), 1);
+  EXPECT_FALSE(queue_is_empty(q));
+
+  EXPECT_EQ(queue_pop(q), (void*)0x3);
+  EXPECT_EQ(queue_get_length(q), 0);
+  EXPECT_TRUE(queue_is_empty(q));
+
+  queue_push(q, (void*)0x1);
+  EXPECT_EQ(queue_get_length(q), 1);
+  EXPECT_FALSE(queue_is_empty(q));
+
+  queue_push(q, (void*)0x2);
+  EXPECT_EQ(queue_get_length(q), 2);
+  EXPECT_FALSE(queue_is_empty(q));
+
+  queue_push(q, (void*)0x3);
+  EXPECT_EQ(queue_get_length(q), 3);
+  EXPECT_FALSE(queue_is_empty(q));
+
+  EXPECT_EQ(queue_pop(q), (void*)0x1);
+  EXPECT_EQ(queue_get_length(q), 2);
+  EXPECT_FALSE(queue_is_empty(q));
+
+  EXPECT_EQ(queue_pop(q), (void*)0x2);
+  EXPECT_EQ(queue_get_length(q), 1);
+  EXPECT_FALSE(queue_is_empty(q));
+
+  queue_push(q, (void*)0x5);
+  EXPECT_EQ(queue_get_length(q), 2);
+  EXPECT_FALSE(queue_is_empty(q));
+
+  queue_push(q, (void*)0x6);
+  EXPECT_EQ(queue_get_length(q), 3);
+  EXPECT_FALSE(queue_is_empty(q));
+
+  EXPECT_EQ(queue_pop(q), (void*)0x3);
+  EXPECT_EQ(queue_get_length(q), 2);
+  EXPECT_FALSE(queue_is_empty(q));
+
+  queue_push(q, (void*)0x7);
+  EXPECT_EQ(queue_get_length(q), 3);
+  EXPECT_FALSE(queue_is_empty(q));
+
+  EXPECT_EQ(queue_pop(q), (void*)0x5);
+  EXPECT_EQ(queue_get_length(q), 2);
+  EXPECT_FALSE(queue_is_empty(q));
+
+  EXPECT_EQ(queue_pop(q), (void*)0x6);
+  EXPECT_EQ(queue_get_length(q), 1);
+  EXPECT_FALSE(queue_is_empty(q));
+
+  queue_push(q, (void*)0x8);
+  EXPECT_EQ(queue_get_length(q), 2);
+  EXPECT_FALSE(queue_is_empty(q));
+
+  EXPECT_EQ(queue_pop(q), (void*)0x7);
+  EXPECT_EQ(queue_get_length(q), 1);
+  EXPECT_FALSE(queue_is_empty(q));
+
+  EXPECT_EQ(queue_pop(q), (void*)0x8);
+  EXPECT_EQ(queue_get_length(q), 0);
+  EXPECT_TRUE(queue_is_empty(q));
+
   queue_destroy(q);
 }
 
@@ -41,7 +109,7 @@ static void* queue_popper(queue_t q) {
 }
 
 TEST(QueueMultiThread) {
-  queue_t q = queue_create();
+  queue_t q = queue_create(17);
   pthread_t t[5];
   for (unsigned i = 0; i < 5; i++) {
     EXPECT_EQ(pthread_create(&t[i], NULL, (void*)queue_pusher, q), 0);
@@ -70,4 +138,5 @@ TEST(QueueMultiThread) {
     pthread_join(t[i - 1], NULL);
   }
   EXPECT_TRUE(queue_is_empty(q));
+  queue_destroy(q);
 }
