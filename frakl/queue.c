@@ -57,12 +57,12 @@ void queue_push(queue_t q, void* data) {
   q->cells[atomic_fetch_inc_and(&q->head, q->cap_mask)].data = data;
 }
 
-void queue_pop_n(queue_t q, unsigned n, void* results[]) {
+unsigned queue_pop_n(queue_t q, unsigned n, void* results[]) {
   const uintptr_t head = atomic_load(&q->head);
   uintptr_t tail = atomic_load(&q->tail);
   if (tail == head) {
     bzero(results, sizeof(void*) * n);
-    return;
+    return 0;
   }
   const uintptr_t cap_mask = q->cap_mask;
   const uintptr_t cap = cap_mask + 1;
@@ -73,11 +73,14 @@ void queue_pop_n(queue_t q, unsigned n, void* results[]) {
     new_tail = (tail + (n < len ? n : len)) & cap_mask;
   } while (!atomic_compare_exchange_weak(&q->tail, &tail, new_tail));
   void** results_iter = results;
+  unsigned res = 0;
   for (uintptr_t i = tail; i != new_tail; i = ((i + 1) & cap_mask)) {
+    res += 1;
     struct q_cell* cell = &q->cells[i];
     *results_iter++ = cell->data;
     cell->data = NULL;
   }
+  return res;
 }
 
 bool queue_is_empty(queue_t q) {

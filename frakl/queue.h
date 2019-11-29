@@ -17,12 +17,11 @@ void queue_destroy(queue_t q);
 
 void queue_push(queue_t q, void* data);
 
-void queue_pop_n(queue_t q, unsigned n, void* results[]);
+unsigned queue_pop_n(queue_t q, unsigned n, void* results[]);
 
 static inline void* queue_pop(queue_t q) {
   void* buffer[1];
-  queue_pop_n(q, 1, buffer);
-  return buffer[0];
+  return queue_pop_n(q, 1, buffer) == 1 ? buffer[0] : NULL;
 }
 
 void queue_dump(queue_t q);

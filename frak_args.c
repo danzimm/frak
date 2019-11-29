@@ -172,6 +172,12 @@ struct arg_spec const* const frak_arg_specs = (struct arg_spec[]){
      .parser = bool_parser,
      .offset = offsetof(struct frak_args, print_help),
      .help = "Show this help page"},
+    {.flag = "--worker-cache-size",
+     .takes_arg = true,
+     .required = false,
+     .parser = pu32_parser,
+     .offset = offsetof(struct frak_args, worker_cache_size),
+     .help = "The number of pixels to place into a single work item"},
     {.flag = NULL},
 };
 
@@ -188,6 +194,7 @@ void frak_args_init(frak_args_t args) {
   args->palette_only = false;
   args->worker_count = 0;
   args->print_help = false;
+  args->worker_cache_size = 0;
 }
 
 static int color_sort(void const* a, void const* b) {
@@ -245,6 +252,9 @@ char* frak_args_validate(frak_args_t args) {
           "Can only in place change palette if color palette is"
           " being used (--palette color/custom)");
     }
+  }
+  if (!args->worker_cache_size) {
+    args->worker_cache_size = (uint32_t)-1;
   }
   return NULL;
 }

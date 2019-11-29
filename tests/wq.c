@@ -26,8 +26,8 @@ static void _test_wq_internal(bool use_local_cache) {
   struct timespec concurrent;
   struct timespec serial;
 
-  wq_t wq = wq_create("test", 0, 0);
-  wq_set_use_local_cache(wq, use_local_cache);
+  wq_t wq = wq_create("test", 0, 32 - __builtin_clz(sizeof(buffer)));
+  wq_set_worker_cache_size(wq, use_local_cache ? (uint32_t)-1 : 1);
   for (unsigned i = 0; i < sizeof(buffer); i++) {
     wq_push(wq, (void*)computer, buffer + i);
   }
