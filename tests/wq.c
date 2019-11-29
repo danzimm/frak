@@ -20,13 +20,14 @@ static void computer(uint8_t* cell, uint8_t* base) {
   *cell = x;
 }
 
-TEST(Workqueue) {
+static void _test_wq_internal(bool use_local_cache) {
   uint8_t buffer[512];
   struct timespec start;
   struct timespec concurrent;
   struct timespec serial;
 
   wq_t wq = wq_create("test", 0, 0);
+  wq_set_use_local_cache(wq, use_local_cache);
   for (unsigned i = 0; i < sizeof(buffer); i++) {
     wq_push(wq, (void*)computer, buffer + i);
   }
@@ -69,3 +70,7 @@ TEST(Workqueue) {
          concurrent.tv_sec * 1000 + concurrent.tv_nsec / 1000000);
   wq_destroy(wq);
 }
+
+TEST(WorkqueueNoLocalCache) { _test_wq_internal(false); }
+
+TEST(WorkqueueLocalCache) { _test_wq_internal(true); }
