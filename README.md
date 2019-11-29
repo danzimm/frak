@@ -1,5 +1,6 @@
 # frak
 fractal generator
+![TravisCI](https://travis-ci.com/danzimm/frak.svg?branch=master)
 
 ## Example
 ![Example](/mand.png)
