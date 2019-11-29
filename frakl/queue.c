@@ -5,12 +5,13 @@
 #include <assert.h>
 #include <stdatomic.h>
 #include <stdio.h>
+#include <strings.h>
 
 struct q_cell;
 typedef struct q_cell* q_cell_t;
 
 struct q_cell {
-  void* data;
+  _Atomic(void*) data;
 };
 
 struct queue {
@@ -29,6 +30,7 @@ queue_t queue_create(uint8_t cap_pow) {
   res->cap_mask = cap - 1;
   atomic_init(&res->head, 0);
   atomic_init(&res->tail, 0);
+  bzero(res->cells, sizeof(struct q_cell) * cap);
   return res;
 }
 
@@ -49,11 +51,13 @@ uintptr_t atomic_fetch_inc_and(_Atomic(uintptr_t) * value, uintptr_t mask) {
 }
 
 void queue_push(queue_t q, void* data) {
-  q->cells[atomic_fetch_inc_and(&q->head, q->cap_mask)].data = data;
+  atomic_store(&q->cells[atomic_fetch_inc_and(&q->head, q->cap_mask)].data,
+               data);
 }
 
 void* queue_pop(queue_t q) {
-  return q->cells[atomic_fetch_inc_and(&q->tail, q->cap_mask)].data;
+  return atomic_exchange(
+      &q->cells[atomic_fetch_inc_and(&q->tail, q->cap_mask)].data, NULL);
 }
 
 bool queue_is_empty(queue_t q) {
