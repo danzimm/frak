@@ -9,15 +9,19 @@
 
 #include "tests.h"
 
-static void computer(uint8_t* cell, uint8_t* base) {
-  unsigned diff = cell - base;
-  unsigned data = diff;
-  diff *= diff;
-  for (unsigned i = 0; i < diff; i++) {
-    data += 37 * data / 43 + 100;
-  }
-  uint8_t x = data & 255;
-  *cell = x;
+static void computer(uint8_t** cells, unsigned n, uint8_t* base) {
+  uint8_t* const* const end = cells + n;
+  do {
+    uint8_t* cell = *cells;
+    unsigned diff = cell - base;
+    unsigned data = diff;
+    diff *= diff;
+    for (unsigned i = 0; i < diff; i++) {
+      data += 37 * data / 43 + 100;
+    }
+    uint8_t x = data & 255;
+    *cell = x;
+  } while (++cells != end);
 }
 
 static void _test_wq_internal(bool use_local_cache) {
@@ -26,10 +30,11 @@ static void _test_wq_internal(bool use_local_cache) {
   struct timespec concurrent;
   struct timespec serial;
 
-  wq_t wq = wq_create("test", 0, 32 - __builtin_clz(sizeof(buffer)));
+  wq_t wq =
+      wq_create("test", (void*)computer, 0, 32 - __builtin_clz(sizeof(buffer)));
   wq_set_worker_cache_size(wq, use_local_cache ? (uint32_t)-1 : 1);
   for (unsigned i = 0; i < sizeof(buffer); i++) {
-    wq_push(wq, (void*)computer, buffer + i);
+    wq_push(wq, buffer + i);
   }
 
   clock_gettime(CLOCK_MONOTONIC_RAW, &start);

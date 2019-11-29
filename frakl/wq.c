@@ -15,18 +15,15 @@ struct wq {
   uint32_t local_cache_size;
   bool computed_cache_size;
   pthread_t* workers;
-  void* ctx;
-};
-
-struct wq_item {
   wq_cb_t cb;
-  void* work;
+  void* ctx;
 };
 
 static size_t get_reasonable_worker_count(void) {
   return 4 * sysconf(_SC_NPROCESSORS_ONLN) / 3;
 }
-wq_t wq_create(const char* name, size_t worker_count, size_t queue_cap_shift) {
+wq_t wq_create(const char* name, wq_cb_t cb, size_t worker_count,
+               size_t queue_cap_shift) {
   wq_t res = malloc(sizeof(struct wq));
   res->name = strdup(name);
   res->queue = queue_create(queue_cap_shift);
@@ -35,6 +32,7 @@ wq_t wq_create(const char* name, size_t worker_count, size_t queue_cap_shift) {
   }
   res->worker_count = worker_count;
   res->workers = NULL;
+  res->cb = cb;
   res->ctx = NULL;
   res->local_cache_size = (uint32_t)-1;
   return res;
@@ -46,35 +44,20 @@ void wq_set_worker_cache_size(wq_t wq, uint32_t size) {
 
 const char* wq_get_name(wq_t wq) { return wq->name; }
 
-void wq_push(wq_t wq, wq_cb_t cb, void* work) {
-  struct wq_item* item = malloc(sizeof(struct wq_item));
-  item->cb = cb;
-  item->work = work;
-  queue_push(wq->queue, item);
-}
+void wq_push(wq_t wq, void* work) { queue_push(wq->queue, work); }
 
 static void* wq_worker(wq_t wq) {
   queue_t q = wq->queue;
+  wq_cb_t cb = wq->cb;
   void* ctx = wq->ctx;
 
   const uint32_t cache_size = wq->local_cache_size ?: 10;
-  struct wq_item** cache = calloc(cache_size, sizeof(struct wq_item*));
+  void** cache = calloc(cache_size, sizeof(struct wq_item*));
 
-  struct wq_item* item;
-  struct wq_item* const* end = cache + cache_size;
-  struct wq_item** iter;
-  do {
-    unsigned n = queue_pop_n(q, cache_size, (void**)cache);
-    if (!n) {
-      break;
-    }
-    iter = cache;
-    end = iter + n;
-    do {
-      item = *iter;
-      item->cb(item->work, ctx);
-    } while (++iter != end);
-  } while (true);
+  unsigned n;
+  while ((n = queue_pop_n(q, cache_size, cache)) != 0) {
+    cb(cache, n, ctx);
+  }
   free(cache);
   return NULL;
 }

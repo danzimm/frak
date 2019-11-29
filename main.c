@@ -82,15 +82,21 @@ struct pixel_worker_ctx {
                       uint32_t height);
 };
 
-static void pixel_worker(void* pixel, struct pixel_worker_ctx* ctx) {
-  uint32_t i = (uint32_t)(pixel - ctx->buffer);
+static void pixel_worker(void** pixels, unsigned n,
+                         struct pixel_worker_ctx* ctx) {
   struct frak_args const* const args = ctx->args;
 
   const uint32_t width = args->width;
   const uint32_t height = args->height;
-  uint32_t row = i / width;
-  uint32_t column = i % width;
-  *(uint8_t*)pixel = ctx->callback(column, row, width, height);
+  void** iter = pixels;
+  void* const* const end = iter + n;
+  do {
+    void* pixel = *iter;
+    uint32_t i = (uint32_t)(pixel - ctx->buffer);
+    uint32_t row = i / width;
+    uint32_t column = i % width;
+    *(uint8_t*)pixel = ctx->callback(column, row, width, height);
+  } while (++iter != end);
 }
 
 // n-atic:
@@ -272,11 +278,11 @@ int main(int argc, const char* argv[]) {
     }
 
     const uint32_t work_count = args.width * args.height;
-    wq_t wq =
-        wq_create("frak", args.worker_count, 32 - __builtin_clz(work_count));
+    wq_t wq = wq_create("frak", (void*)pixel_worker, args.worker_count,
+                        32 - __builtin_clz(work_count));
     wq_set_worker_cache_size(wq, args.worker_cache_size);
     for (uint32_t i = 0; i < work_count; i++) {
-      wq_push(wq, (void*)pixel_worker, data + i);
+      wq_push(wq, data + i);
     }
     wq_start(wq, &ctx);
     wq_wait(wq);
