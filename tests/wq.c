@@ -65,4 +65,5 @@ TEST(Workqueue) {
          serial.tv_sec * 1000 + serial.tv_nsec / 1000000,
          concurrent.tv_sec * 1000 + concurrent.tv_nsec / 1000000);
 #endif
+  wq_destroy(wq);
 }
