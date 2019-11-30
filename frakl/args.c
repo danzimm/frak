@@ -60,7 +60,7 @@ char* bool_parser(const char* arg, void* slot, void* ctx) {
 char* str_parser(const char* arg, void* slot, void* ctx) {
   (void)ctx;
   if (!arg) {
-    return strdup("expected argument");
+    return strdup("programmer error, str options require an argument");
   }
   *(const char**)slot = arg;
   return NULL;

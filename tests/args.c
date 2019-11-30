@@ -43,3 +43,33 @@ TEST(ArgsBool) {
                "can't take arguments");
   free(err);
 }
+
+TEST(ArgsString) {
+  const char* ctx[2];
+  const struct arg_spec specs[] = {
+      {
+          .flag = "--noarg",
+          .parser = str_parser,
+          .offset = 0,
+      },
+      {
+          .flag = "--arg",
+          .takes_arg = true,
+          .parser = str_parser,
+          .offset = sizeof(const char*),
+      },
+      {.flag = NULL},
+  };
+
+  bzero(ctx, sizeof(ctx));
+  EXPECT_EQ(NULL, parse_args(2, (const char*[]){"--arg", "bar"}, specs, NULL,
+                             NULL, ctx));
+  EXPECT_EQ(ctx[0], NULL);
+  EXPECT_STREQ(ctx[1], "bar");
+
+  char* err = parse_args(1, (const char*[]){"--noarg"}, specs, NULL, NULL, ctx);
+  EXPECT_STREQ(err,
+               "Unable to parse '--noarg': programmer error, str options "
+               "require an argument");
+  free(err);
+}
