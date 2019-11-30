@@ -94,6 +94,49 @@ TEST(Queue) {
   queue_destroy(q);
 }
 
+TEST(QueuePopN) {
+  void* buffer[3];
+
+  queue_t q = queue_create(2);
+  queue_push(q, (void*)0x1);
+  queue_push(q, (void*)0x2);
+
+  EXPECT_EQ(queue_pop_n(q, 2, buffer), 2);
+  EXPECT_EQ(buffer[0], (void*)0x1);
+  EXPECT_EQ(buffer[1], (void*)0x2);
+
+  queue_push(q, (void*)0x3);
+  queue_push(q, (void*)0x4);
+
+  EXPECT_EQ(queue_pop_n(q, 3, buffer), 2);
+  EXPECT_EQ(buffer[0], (void*)0x3);
+  EXPECT_EQ(buffer[1], (void*)0x4);
+
+  queue_push(q, (void*)0x5);
+
+  EXPECT_EQ(queue_pop_n(q, 3, buffer), 1);
+  EXPECT_EQ(buffer[0], (void*)0x5);
+
+  EXPECT_EQ(queue_pop_n(q, 3, buffer), 0);
+  EXPECT_EQ(queue_pop_n(q, 0, buffer), 0);
+
+  queue_push(q, (void*)0x6);
+  queue_push(q, (void*)0x7);
+  queue_push(q, (void*)0x8);
+
+  EXPECT_EQ(queue_pop_n(q, 4, buffer), 3);
+  EXPECT_EQ(buffer[0], (void*)0x6);
+  EXPECT_EQ(buffer[1], (void*)0x7);
+  EXPECT_EQ(buffer[2], (void*)0x8);
+
+  queue_push(q, (void*)0x9);
+
+  EXPECT_EQ(queue_pop_n(q, 10, buffer), 1);
+  EXPECT_EQ(buffer[0], (void*)0x9);
+
+  queue_destroy(q);
+}
+
 static void* queue_pusher(queue_t q) {
   for (unsigned i = 0; i < 10000; i++) {
     queue_push(q, (void*)(uintptr_t)(i + 1));
