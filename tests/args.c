@@ -134,3 +134,64 @@ TEST(ArgsPDbl) {
                "require an arg");
   free(err);
 }
+
+TEST(ArgsPU32) {
+  uint32_t ctx[2];
+  const struct arg_spec specs[] = {
+      {
+          .flag = "--noarg",
+          .parser = pu32_parser,
+          .offset = 0,
+      },
+      {
+          .flag = "--arg",
+          .takes_arg = true,
+          .parser = pu32_parser,
+          .offset = sizeof(uint32_t),
+      },
+      {.flag = NULL},
+  };
+
+  bzero(ctx, sizeof(ctx));
+  EXPECT_EQ(NULL, parse_args(2, (const char*[]){"--arg", "3"}, specs, NULL,
+                             NULL, ctx));
+  EXPECT_EQ(ctx[0], 0);
+  EXPECT_EQ(ctx[1], 3);
+
+  bzero(ctx, sizeof(ctx));
+  EXPECT_EQ(NULL, parse_args(2, (const char*[]){"--arg", "012345"}, specs, NULL,
+                             NULL, ctx));
+  EXPECT_EQ(ctx[0], 0);
+  EXPECT_EQ(ctx[1], 012345);
+
+  bzero(ctx, sizeof(ctx));
+  EXPECT_EQ(NULL, parse_args(2, (const char*[]){"--arg", "0x10"}, specs, NULL,
+                             NULL, ctx));
+  EXPECT_EQ(ctx[0], 0);
+  EXPECT_EQ(ctx[1], 16);
+
+  char* err =
+      parse_args(2, (const char*[]){"--arg", "3.00"}, specs, NULL, NULL, ctx);
+  EXPECT_STREQ(err,
+               "Unable to parse '--arg 3.00': expected number, error at .");
+  free(err);
+
+  err = parse_args(2, (const char*[]){"--arg", "foo"}, specs, NULL, NULL, ctx);
+  EXPECT_STREQ(err, "Unable to parse '--arg foo': expected number, error at f");
+  free(err);
+
+  err = parse_args(2, (const char*[]){"--arg", "0"}, specs, NULL, NULL, ctx);
+  EXPECT_STREQ(err, "Unable to parse '--arg 0': can't be 0");
+  free(err);
+
+  err = parse_args(2, (const char*[]){"--arg", "4294967296"}, specs, NULL, NULL,
+                   ctx);
+  EXPECT_STREQ(err, "Unable to parse '--arg 4294967296': too large");
+  free(err);
+
+  err = parse_args(1, (const char*[]){"--noarg"}, specs, NULL, NULL, ctx);
+  EXPECT_STREQ(err,
+               "Unable to parse '--noarg': programmer error, u32 options "
+               "require an arg");
+  free(err);
+}
