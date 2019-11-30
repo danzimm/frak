@@ -22,6 +22,10 @@ char* pu32_parser(const char* arg, void* slot, void* ctx) {
   (void)ctx;
   char* result = NULL;
   const char* cresult = NULL;
+  if (!arg) {
+    cresult = "programmer error, u32 options require an arg";
+    goto out;
+  }
   if (*arg == '\0') {
     cresult = "unexpected empty string";
     goto out;
@@ -51,7 +55,7 @@ out:
 char* bool_parser(const char* arg, void* slot, void* ctx) {
   (void)ctx;
   if (arg) {
-    return strdup("unexpected argument");
+    return strdup("programmer error, bool options can't take arguments");
   }
   *(bool*)slot = true;
   return NULL;
@@ -60,7 +64,7 @@ char* bool_parser(const char* arg, void* slot, void* ctx) {
 char* str_parser(const char* arg, void* slot, void* ctx) {
   (void)ctx;
   if (!arg) {
-    return strdup("expected argument");
+    return strdup("programmer error, str options require an argument");
   }
   *(const char**)slot = arg;
   return NULL;
@@ -70,6 +74,10 @@ char* pdbl_parser(const char* arg, void* slot, void* ctx) {
   (void)ctx;
   char* result = NULL;
   const char* cresult = NULL;
+  if (!arg) {
+    cresult = "programmer error, dbl options require an arg";
+    goto out;
+  }
   if (*arg == '\0') {
     cresult = "unexpected empty string";
     goto out;
@@ -112,7 +120,12 @@ static char* strconcat_enum_opts(char* result, arg_enum_opt_t opts) {
 char* enum_parser(const char* arg, void* slot, void* ctx) {
   arg_enum_opt_t opts = ctx;
   if (!opts || !opts->option) {
-    return strdup("no option to match, programmer error");
+    return strdup(
+        "programmer error, enum options require a parser_ctx (a "
+        "arg_enum_opt_t)");
+  }
+  if (!arg) {
+    return strdup("programmer error, enum options require an arg");
   }
   do {
     if (strcmp(opts->option, arg) == 0) {
@@ -132,15 +145,20 @@ static unsigned get_specs_len(struct arg_spec const* const specs) {
 char* parse_args(int argc, const char* argv[],
                  struct arg_spec const* const specs, void (*initializer)(void*),
                  char* (*validator)(void*), void* ctx) {
-  initializer(ctx);
+  if (initializer) {
+    initializer(ctx);
+  }
   char* err = NULL;
   bool* did_parse = NULL;
+  const char** iter = &argv[0];
+  const char** end = iter + argc;
   if (specs == NULL || specs->flag == NULL) {
+    if (iter != end) {
+      asprintf(&err, "Unknown arg '%s'", *iter);
+    }
     goto out;
   }
 
-  const char** iter = &argv[0];
-  const char** end = iter + argc;
   struct arg_spec const* spec_iter;
   bool found;
 
@@ -205,7 +223,7 @@ out:
   if (did_parse) {
     free(did_parse);
   }
-  return err ?: validator(ctx);
+  return err ?: (validator ? validator(ctx) : NULL);
 }
 
 static const char* skip_dash(const char* str) {

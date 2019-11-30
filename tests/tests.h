@@ -4,6 +4,7 @@
 
 #include <stdbool.h>
 #include <stdio.h>
+#include <string.h>
 
 typedef void (*test_cb_t)(void);
 
@@ -32,3 +33,6 @@ void fail(const char* check, const char* file, int line);
 #define EXPECT_EQ(x, y) EXPECT_((x) == (y), #x " != " #y)
 #define EXPECT_TRUE(x) EXPECT_(!!(x), "!" #x)
 #define EXPECT_FALSE(x) EXPECT_(!(x), #x)
+#define EXPECT_STREQ(x, y)                                           \
+  EXPECT_((x == NULL && y == NULL) || (x && y && strcmp(x, y) == 0), \
+          #x " != " #y)
