@@ -11,7 +11,7 @@ branches:
     - /^release-.*$/
 addons:
   apt:
-    packages: libtiff
+    packages: libtiff-tools
   homebrew:
     packages: libtiff
 jobs:
