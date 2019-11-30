@@ -67,6 +67,12 @@ TEST(ArgsString) {
   EXPECT_EQ(ctx[0], NULL);
   EXPECT_STREQ(ctx[1], "bar");
 
+  bzero(ctx, sizeof(ctx));
+  EXPECT_EQ(NULL, parse_args(2, (const char*[]){"--arg", ""}, specs, NULL, NULL,
+                             ctx));
+  EXPECT_EQ(ctx[0], NULL);
+  EXPECT_STREQ(ctx[1], "");
+
   char* err = parse_args(1, (const char*[]){"--noarg"}, specs, NULL, NULL, ctx);
   EXPECT_STREQ(err,
                "Unable to parse '--noarg': programmer error, str options "
@@ -110,6 +116,11 @@ TEST(ArgsPDbl) {
   EXPECT_EQ(ctx[1], 3.0);
 
   char* err =
+      parse_args(2, (const char*[]){"--arg", ""}, specs, NULL, NULL, ctx);
+  EXPECT_STREQ(err, "Unable to parse '--arg ': unexpected empty string");
+  free(err);
+
+  err =
       parse_args(2, (const char*[]){"--arg", "3.00."}, specs, NULL, NULL, ctx);
   EXPECT_STREQ(err,
                "Unable to parse '--arg 3.00.': expected number, error at .");
@@ -171,7 +182,11 @@ TEST(ArgsPU32) {
   EXPECT_EQ(ctx[1], 16);
 
   char* err =
-      parse_args(2, (const char*[]){"--arg", "3.00"}, specs, NULL, NULL, ctx);
+      parse_args(2, (const char*[]){"--arg", ""}, specs, NULL, NULL, ctx);
+  EXPECT_STREQ(err, "Unable to parse '--arg ': unexpected empty string");
+  free(err);
+
+  err = parse_args(2, (const char*[]){"--arg", "3.00"}, specs, NULL, NULL, ctx);
   EXPECT_STREQ(err,
                "Unable to parse '--arg 3.00': expected number, error at .");
   free(err);
