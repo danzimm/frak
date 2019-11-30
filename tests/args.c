@@ -73,3 +73,64 @@ TEST(ArgsString) {
                "require an argument");
   free(err);
 }
+
+TEST(ArgsPDbl) {
+  double ctx[2];
+  const struct arg_spec specs[] = {
+      {
+          .flag = "--noarg",
+          .parser = pdbl_parser,
+          .offset = 0,
+      },
+      {
+          .flag = "--arg",
+          .takes_arg = true,
+          .parser = pdbl_parser,
+          .offset = sizeof(double),
+      },
+      {.flag = NULL},
+  };
+
+  bzero(ctx, sizeof(ctx));
+  EXPECT_EQ(NULL, parse_args(2, (const char*[]){"--arg", "3"}, specs, NULL,
+                             NULL, ctx));
+  EXPECT_EQ(ctx[0], 0.0);
+  EXPECT_EQ(ctx[1], 3.0);
+
+  bzero(ctx, sizeof(ctx));
+  EXPECT_EQ(NULL, parse_args(2, (const char*[]){"--arg", "3.0"}, specs, NULL,
+                             NULL, ctx));
+  EXPECT_EQ(ctx[0], 0.0);
+  EXPECT_EQ(ctx[1], 3.0);
+
+  bzero(ctx, sizeof(ctx));
+  EXPECT_EQ(NULL, parse_args(2, (const char*[]){"--arg", "3.00"}, specs, NULL,
+                             NULL, ctx));
+  EXPECT_EQ(ctx[0], 0.0);
+  EXPECT_EQ(ctx[1], 3.0);
+
+  char* err =
+      parse_args(2, (const char*[]){"--arg", "3.00."}, specs, NULL, NULL, ctx);
+  EXPECT_STREQ(err,
+               "Unable to parse '--arg 3.00.': expected number, error at .");
+  free(err);
+
+  err = parse_args(2, (const char*[]){"--arg", "foo"}, specs, NULL, NULL, ctx);
+  EXPECT_STREQ(err, "Unable to parse '--arg foo': expected number, error at f");
+  free(err);
+
+  err = parse_args(2, (const char*[]){"--arg", "0.0"}, specs, NULL, NULL, ctx);
+  EXPECT_STREQ(err, "Unable to parse '--arg 0.0': expected positive number");
+  free(err);
+
+  err =
+      parse_args(2, (const char*[]){"--arg", "-10.2"}, specs, NULL, NULL, ctx);
+  EXPECT_STREQ(err, "Unable to parse '--arg -10.2': expected positive number");
+  free(err);
+
+  err = parse_args(1, (const char*[]){"--noarg"}, specs, NULL, NULL, ctx);
+  EXPECT_STREQ(err,
+               "Unable to parse '--noarg': programmer error, dbl options "
+               "require an arg");
+  free(err);
+}

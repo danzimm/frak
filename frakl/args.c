@@ -70,6 +70,10 @@ char* pdbl_parser(const char* arg, void* slot, void* ctx) {
   (void)ctx;
   char* result = NULL;
   const char* cresult = NULL;
+  if (!arg) {
+    cresult = "programmer error, dbl options require an arg";
+    goto out;
+  }
   if (*arg == '\0') {
     cresult = "unexpected empty string";
     goto out;
