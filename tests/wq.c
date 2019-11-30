@@ -2,9 +2,6 @@
 
 #include <frakl/time_utils.h>
 #include <frakl/wq.h>
-#include <pthread.h>
-#include <stdint.h>
-#include <stdio.h>
 #include <unistd.h>
 
 #include "tests.h"
