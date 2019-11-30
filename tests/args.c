@@ -339,3 +339,67 @@ TEST(ArgsParsesHetrogenousSpec) {
   EXPECT_EQ(ctx.dbl, 0);
   EXPECT_TRUE(ctx.b);
 }
+
+TEST(ArgsParsesHetrogenousSpecRequired) {
+  const struct arg_spec specs[] = {
+      {
+          .flag = "--str",
+          .takes_arg = true,
+          .required = true,
+          .parser = str_parser,
+          .offset = offsetof(struct test_ctx, str),
+      },
+      {
+          .flag = "--dbl",
+          .takes_arg = true,
+          .parser = pdbl_parser,
+          .offset = offsetof(struct test_ctx, dbl),
+      },
+      {
+          .flag = "--u32",
+          .takes_arg = true,
+          .required = true,
+          .parser = pu32_parser,
+          .offset = offsetof(struct test_ctx, i),
+      },
+      {
+          .flag = "--bool",
+          .parser = bool_parser,
+          .offset = offsetof(struct test_ctx, b),
+      },
+      {.flag = NULL},
+  };
+  struct test_ctx ctx;
+
+  EXPECT_EQ(NULL, parse_args(7,
+                             (const char*[]){"--bool", "--dbl", "3.0", "--str",
+                                             "foo", "--u32", "10"},
+                             specs, (void*)init_test_ctx,
+                             (void*)validate_test_ctx, &ctx));
+  EXPECT_STREQ(ctx.str, "foo");
+  EXPECT_EQ(ctx.i, 10);
+  EXPECT_EQ(ctx.dbl, 3.0);
+  EXPECT_TRUE(ctx.b);
+
+  EXPECT_EQ(NULL,
+            parse_args(4, (const char*[]){"--u32", "4", "--str", "11"}, specs,
+                       (void*)init_test_ctx, (void*)validate_test_ctx, &ctx));
+  EXPECT_STREQ(ctx.str, "11");
+  EXPECT_EQ(ctx.i, 4);
+
+  char* err =
+      parse_args(4, (const char*[]){"--dbl", "4.0", "--u32", "11"}, specs,
+                 (void*)init_test_ctx, (void*)validate_test_ctx, &ctx);
+  EXPECT_STREQ(err, "Missing required arg: --str");
+  free(err);
+
+  err = parse_args(4, (const char*[]){"--dbl", "4.0", "--str", "11"}, specs,
+                   (void*)init_test_ctx, (void*)validate_test_ctx, &ctx);
+  EXPECT_STREQ(err, "Missing required arg: --u32");
+  free(err);
+
+  err = parse_args(0, (const char*[]){}, specs, (void*)init_test_ctx,
+                   (void*)validate_test_ctx, &ctx);
+  EXPECT_STREQ(err, "Missing required arg: --str");
+  free(err);
+}
