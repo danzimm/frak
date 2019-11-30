@@ -210,3 +210,20 @@ TEST(ArgsPU32) {
                "require an arg");
   free(err);
 }
+
+TEST(ArgsExpectedArgs) {
+  const char* ctx[2];
+  const struct arg_spec specs[] = {
+      {
+          .flag = "--arg",
+          .takes_arg = true,
+          .parser = str_parser,
+          .offset = sizeof(const char*),
+      },
+      {.flag = NULL},
+  };
+
+  char* err = parse_args(1, (const char*[]){"--arg"}, specs, NULL, NULL, ctx);
+  EXPECT_STREQ(err, "Expected argument following --arg");
+  free(err);
+}
