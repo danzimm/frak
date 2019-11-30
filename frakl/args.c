@@ -51,7 +51,7 @@ out:
 char* bool_parser(const char* arg, void* slot, void* ctx) {
   (void)ctx;
   if (arg) {
-    return strdup("unexpected argument");
+    return strdup("programmer error, bool options can't take arguments");
   }
   *(bool*)slot = true;
   return NULL;
