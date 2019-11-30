@@ -4,6 +4,7 @@
 
 #include <stdbool.h>
 #include <stdio.h>
+#include <string.h>
 
 typedef void (*test_cb_t)(void);
 

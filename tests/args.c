@@ -2,6 +2,7 @@
 
 #include <frakl/args.h>
 #include <stddef.h>
+#include <stdint.h>
 #include <strings.h>
 
 #include "tests.h"
@@ -406,6 +407,7 @@ TEST(ArgsParsesHetrogenousSpec) {
   char* err = parse_args(3, (const char*[]){"--str", "nobool", "--bool"}, specs,
                          (void*)init_test_ctx, (void*)validate_test_ctx, &ctx);
   EXPECT_STREQ(err, "Cannot pass bool and nobool");
+  free(err);
   EXPECT_EQ(ctx.str, "nobool");
   EXPECT_EQ(ctx.i, 0);
   EXPECT_EQ(ctx.dbl, 0);
