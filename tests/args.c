@@ -1,6 +1,7 @@
 // Copywrite (c) 2019 Dan Zimmerman
 
 #include <frakl/args.h>
+#include <stddef.h>
 #include <strings.h>
 
 #include "tests.h"
@@ -254,4 +255,87 @@ TEST(ArgsUnexpectedArg) {
   err = parse_args(1, (const char*[]){"--arg"}, NULL, NULL, NULL, ctx);
   EXPECT_STREQ(err, "Unknown arg '--arg'");
   free(err);
+}
+
+struct test_ctx {
+  const char* str;
+  double dbl;
+  uint32_t i;
+  bool b;
+};
+
+static void init_test_ctx(struct test_ctx* ctx) {
+  bzero(ctx, sizeof(struct test_ctx));
+}
+
+static char* validate_test_ctx(struct test_ctx* ctx) {
+  if (ctx->b && ctx->str && strcmp(ctx->str, "nobool") == 0) {
+    return strdup("Cannot pass bool and nobool");
+  }
+  return NULL;
+}
+
+TEST(ArgsParsesHetrogenousSpec) {
+  const struct arg_spec specs[] = {
+      {
+          .flag = "--str",
+          .takes_arg = true,
+          .parser = str_parser,
+          .offset = offsetof(struct test_ctx, str),
+      },
+      {
+          .flag = "--dbl",
+          .takes_arg = true,
+          .parser = pdbl_parser,
+          .offset = offsetof(struct test_ctx, dbl),
+      },
+      {
+          .flag = "--u32",
+          .takes_arg = true,
+          .parser = pu32_parser,
+          .offset = offsetof(struct test_ctx, i),
+      },
+      {
+          .flag = "--bool",
+          .parser = bool_parser,
+          .offset = offsetof(struct test_ctx, b),
+      },
+      {.flag = NULL},
+  };
+  struct test_ctx ctx;
+
+  ctx.str = "hello";
+  EXPECT_EQ(NULL, parse_args(7,
+                             (const char*[]){"--bool", "--dbl", "3.0", "--str",
+                                             "foo", "--u32", "10"},
+                             specs, (void*)init_test_ctx,
+                             (void*)validate_test_ctx, &ctx));
+  EXPECT_STREQ(ctx.str, "foo");
+  EXPECT_EQ(ctx.i, 10);
+  EXPECT_EQ(ctx.dbl, 3.0);
+  EXPECT_TRUE(ctx.b);
+
+  ctx.str = "hello";
+  EXPECT_EQ(NULL,
+            parse_args(4, (const char*[]){"--dbl", "4.0", "--u32", "11"}, specs,
+                       (void*)init_test_ctx, (void*)validate_test_ctx, &ctx));
+  EXPECT_EQ(ctx.str, NULL);
+  EXPECT_EQ(ctx.i, 11);
+  EXPECT_EQ(ctx.dbl, 4.0);
+  EXPECT_FALSE(ctx.b);
+
+  EXPECT_EQ(NULL, parse_args(0, NULL, specs, (void*)init_test_ctx,
+                             (void*)validate_test_ctx, &ctx));
+  EXPECT_EQ(ctx.str, NULL);
+  EXPECT_EQ(ctx.i, 0);
+  EXPECT_EQ(ctx.dbl, 0.0);
+  EXPECT_FALSE(ctx.b);
+
+  char* err = parse_args(3, (const char*[]){"--str", "nobool", "--bool"}, specs,
+                         (void*)init_test_ctx, (void*)validate_test_ctx, &ctx);
+  EXPECT_STREQ(err, "Cannot pass bool and nobool");
+  EXPECT_EQ(ctx.str, "nobool");
+  EXPECT_EQ(ctx.i, 0);
+  EXPECT_EQ(ctx.dbl, 0);
+  EXPECT_TRUE(ctx.b);
 }
