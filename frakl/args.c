@@ -145,12 +145,15 @@ char* parse_args(int argc, const char* argv[],
   }
   char* err = NULL;
   bool* did_parse = NULL;
+  const char** iter = &argv[0];
+  const char** end = iter + argc;
   if (specs == NULL || specs->flag == NULL) {
+    if (iter != end) {
+      asprintf(&err, "Unknown arg '%s'", *iter);
+    }
     goto out;
   }
 
-  const char** iter = &argv[0];
-  const char** end = iter + argc;
   struct arg_spec const* spec_iter;
   bool found;
 

@@ -227,3 +227,31 @@ TEST(ArgsExpectedArgs) {
   EXPECT_STREQ(err, "Expected argument following --arg");
   free(err);
 }
+
+TEST(ArgsUnexpectedArg) {
+  const char* ctx[2];
+  const struct arg_spec specs[] = {
+      {
+          .flag = "--arg",
+          .takes_arg = true,
+          .parser = str_parser,
+          .offset = sizeof(const char*),
+      },
+      {.flag = NULL},
+  };
+
+  char* err = parse_args(1, (const char*[]){"--arg2"}, specs, NULL, NULL, ctx);
+  EXPECT_STREQ(err, "Unknown arg '--arg2'");
+  free(err);
+
+  const struct arg_spec empty_specs[] = {
+      {.flag = NULL},
+  };
+  err = parse_args(1, (const char*[]){"--arg"}, empty_specs, NULL, NULL, ctx);
+  EXPECT_STREQ(err, "Unknown arg '--arg'");
+  free(err);
+
+  err = parse_args(1, (const char*[]){"--arg"}, NULL, NULL, NULL, ctx);
+  EXPECT_STREQ(err, "Unknown arg '--arg'");
+  free(err);
+}
