@@ -212,6 +212,78 @@ TEST(ArgsPU32) {
   free(err);
 }
 
+TEST(ArgsEnum) {
+  unsigned ctx[2];
+  const struct arg_enum_opt pets[] = {
+      {"cat", 1}, {"fish", 2},  {"turtle", 3},
+      {"dog", 4}, {"puppy", 5}, {NULL, 0},
+  };
+  const struct arg_enum_opt fish[] = {
+      {"bass", 1},
+      {"cat", 2},
+      {"carp", 3},
+      {NULL, 0},
+  };
+  const struct arg_spec specs[] = {
+      {
+          .flag = "--pet",
+          .takes_arg = true,
+          .parser = enum_parser,
+          .parser_ctx = (void*)pets,
+          .offset = 0,
+      },
+      {
+          .flag = "--fish",
+          .takes_arg = true,
+          .parser = enum_parser,
+          .parser_ctx = (void*)fish,
+          .offset = sizeof(unsigned),
+      },
+      {
+          .flag = "--fish2",
+          .parser = enum_parser,
+          .parser_ctx = (void*)fish,
+          .offset = sizeof(unsigned),
+      },
+      {
+          .flag = "--fish3",
+          .takes_arg = true,
+          .parser = enum_parser,
+          .offset = sizeof(unsigned),
+      },
+      {.flag = NULL},
+  };
+
+  bzero(ctx, sizeof(ctx));
+  EXPECT_EQ(NULL, parse_args(2, (const char*[]){"--pet", "turtle"}, specs, NULL,
+                             NULL, ctx));
+  EXPECT_EQ(ctx[0], 3);
+
+  bzero(ctx, sizeof(ctx));
+  EXPECT_EQ(NULL, parse_args(2, (const char*[]){"--fish", "bass"}, specs, NULL,
+                             NULL, ctx));
+  EXPECT_EQ(ctx[1], 1);
+
+  char* err = parse_args(1, (const char*[]){"--fish2"}, specs, NULL, NULL, ctx);
+  EXPECT_STREQ(err,
+               "Unable to parse '--fish2': programmer error, enum options "
+               "require an arg");
+  free(err);
+
+  err =
+      parse_args(2, (const char*[]){"--fish3", "bass"}, specs, NULL, NULL, ctx);
+  EXPECT_STREQ(err,
+               "Unable to parse '--fish3 bass': programmer error, enum options "
+               "require a parser_ctx (a arg_enum_opt_t)");
+  free(err);
+
+  err =
+      parse_args(2, (const char*[]){"--fish", "shark"}, specs, NULL, NULL, ctx);
+  EXPECT_STREQ(
+      err, "Unable to parse '--fish shark': expected one of bass, cat, carp");
+  free(err);
+}
+
 TEST(ArgsExpectedArgs) {
   const char* ctx[2];
   const struct arg_spec specs[] = {

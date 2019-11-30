@@ -120,7 +120,12 @@ static char* strconcat_enum_opts(char* result, arg_enum_opt_t opts) {
 char* enum_parser(const char* arg, void* slot, void* ctx) {
   arg_enum_opt_t opts = ctx;
   if (!opts || !opts->option) {
-    return strdup("no option to match, programmer error");
+    return strdup(
+        "programmer error, enum options require a parser_ctx (a "
+        "arg_enum_opt_t)");
+  }
+  if (!arg) {
+    return strdup("programmer error, enum options require an arg");
   }
   do {
     if (strcmp(opts->option, arg) == 0) {
