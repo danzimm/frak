@@ -4,4 +4,24 @@ compiler:
 os:
   - linux
   - osx
+branches:
+  only:
+    - master
+    - stable
+    - /^release-.*$/
+addons:
+  apt:
+    packages: libtiff
+  homebrew:
+    packages: libtiff
+jobs:
+  include:
+    - os: osx
+    - os: linux
+    - os: linux
+      env: FRAK_SAN_TYPE=address
+    - os: linux
+      env: FRAK_SAN_TYPE=thread
+    - os: linux
+      env: FRAK_SAN_TYPE=memory
 script: bash ci.sh
