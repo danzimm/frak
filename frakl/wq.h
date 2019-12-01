@@ -18,7 +18,12 @@ void wq_set_worker_cache_size(wq_t wq, uint32_t size);
 
 const char* wq_get_name(wq_t wq);
 
-void wq_push(wq_t wq, void* work);
+unsigned wq_push_n(wq_t wq, unsigned n, void* work[]);
+
+static inline bool wq_push(wq_t wq, void* work) {
+  void* buffer[1] = {work};
+  return wq_push_n(wq, 1, buffer) == 1;
+}
 
 void wq_start(wq_t wq, void* ctx);
 
