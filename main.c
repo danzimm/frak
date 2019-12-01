@@ -293,22 +293,30 @@ int main(int argc, const char* argv[]) {
 
     if (args.randomize) {
       uint32_t* is = calloc(work_count, sizeof(uint32_t));
-      clock_gettime(CLOCK_MONOTONIC_RAW, &baseis);
+      if (args.stats) {
+        clock_gettime(CLOCK_MONOTONIC_RAW, &baseis);
+      }
       for (uint32_t i = 0; i < work_count; i++) {
         is[i] = i;
       }
-      clock_gettime(CLOCK_MONOTONIC_RAW, &initis);
+      if (args.stats) {
+        clock_gettime(CLOCK_MONOTONIC_RAW, &initis);
+      }
       for (uint32_t i = work_count; i > 0; i--) {
         uint32_t j = give_me_random(i);
         uint32_t tmp = is[j];
         is[j] = is[i];
         is[i] = tmp;
       }
-      clock_gettime(CLOCK_MONOTONIC_RAW, &randomizeis);
+      if (args.stats) {
+        clock_gettime(CLOCK_MONOTONIC_RAW, &randomizeis);
+      }
       for (uint32_t i = 0; i < work_count; i++) {
         wq_push(wq, data + is[i]);
       }
-      clock_gettime(CLOCK_MONOTONIC_RAW, &pushis);
+      if (args.stats) {
+        clock_gettime(CLOCK_MONOTONIC_RAW, &pushis);
+      }
       free(is);
     } else {
       for (uint32_t i = 0; i < work_count; i++) {
