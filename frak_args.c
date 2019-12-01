@@ -179,6 +179,12 @@ struct arg_spec const* const frak_arg_specs = (struct arg_spec[]){
      .parser = bool_parser,
      .offset = offsetof(struct frak_args, stats),
      .help = "Print stats about each phase of running"},
+    {.flag = "--no-compute",
+     .takes_arg = false,
+     .required = false,
+     .parser = bool_parser,
+     .offset = offsetof(struct frak_args, no_compute),
+     .help = "Print stats about each phase of running"},
     {.flag = NULL},
 };
 
@@ -197,6 +203,7 @@ void frak_args_init(frak_args_t args) {
   args->print_help = false;
   args->worker_cache_size = 0;
   args->stats = false;
+  args->no_compute = false;
 }
 
 static int color_sort(void const* a, void const* b) {

@@ -283,9 +283,11 @@ int main(int argc, const char* argv[]) {
     if (args.stats) {
       clock_gettime(CLOCK_MONOTONIC_RAW, &init_queue);
     }
+    if (!args.no_compute) {
+      wq_start(wq, &ctx);
+      wq_wait(wq);
+    }
 
-    wq_start(wq, &ctx);
-    wq_wait(wq);
     if (args.stats) {
       clock_gettime(CLOCK_MONOTONIC_RAW, &compute_data);
     }
