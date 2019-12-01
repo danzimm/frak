@@ -40,15 +40,14 @@ static void fill_random(void* buffer, size_t len) {
 #endif
 }
 
-static uint32_t give_me_random(uint32_t max) {
 #if __APPLE__
-  return arc4random_uniform(max);
+#define base_random arc4random
 #else
-  // Yeah yeah, this isn't uniform. I did an interview question once
-  // implementing properly uniform random numbers for arbitrary ranges...
-  // The implementation isn't fun...
-  return random() % max;
+#define base_random random
 #endif
+
+static uint32_t give_me_random(uint32_t max) {
+  return ((uint64_t)base_random() * max) >> 32;
 }
 
 static uint32_t max_iteration = 1000;
