@@ -67,9 +67,8 @@ static void _test_wq_internal(bool use_local_cache) {
   EXPECT_TRUE(sysconf(_SC_NPROCESSORS_ONLN) <= 1 ||
               (delta.tv_sec >= 0 && delta.tv_nsec >= 0));
 #endif
-  printf("  Serial vs Concurrent: %3ldms vs %3ldms\n",
-         serial.tv_sec * 1000 + serial.tv_nsec / 1000000,
-         concurrent.tv_sec * 1000 + concurrent.tv_nsec / 1000000);
+  printf("  Serial vs Concurrent: %3ldms vs %3ldms\n", timespec_to_ms(&serial),
+         timespec_to_ms(&concurrent));
   wq_destroy(wq);
 }
 
