@@ -13,4 +13,6 @@ void timespec_divide(struct timespec* dst, unsigned n);
 void timespec_avg(struct timespec* dst, struct timespec const* src,
                   unsigned cnt);
 
-#define timespec_to_ms(ts) ((ts)->tv_sec * 1000 + (ts)->tv_nsec / 1000000)
+static inline unsigned long timespec_to_ms(struct timespec* ts) {
+  return ts->tv_sec * 1000 + ts->tv_nsec / 1000000;
+}
