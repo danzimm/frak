@@ -84,8 +84,8 @@ bool run_tests(const char* filter) {
     }
     clock_gettime(CLOCK_MONOTONIC_RAW, (void*)&tend);
     timespec_minus((void*)&tend, (void*)&tstart);
-    printf("[%s][%3ld] %s", success ? "SUCC" : "FAIL",
-           tend.tv_sec * 1000 + tend.tv_nsec / 1000000, iter->name);
+    printf("[%s][%3ld] %s", success ? "SUCC" : "FAIL", timespec_to_ms(&tend),
+           iter->name);
     if (!success || iter->expect_fail) {
       printf(": %s at %s:%d\n", g_failure.check, g_failure.file,
              g_failure.line);

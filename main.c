@@ -337,7 +337,6 @@ out:
     timespec_minus(&mmap_img, &init);
     timespec_minus(&init, &start);
 
-#define milli(ts) (ts.tv_sec * 1000 + ts.tv_nsec / 1000000)
 #define max(a, b) ((a) < (b) ? (a) : (b))
 #define maxdigi(x)                               \
   do {                                           \
@@ -348,17 +347,18 @@ out:
   } while (0)
 
     int ndigits = 1;
-    maxdigi(milli(init));
-    maxdigi(milli(mmap_img));
-    maxdigi(milli(meta));
-    maxdigi(milli(init_queue));
-    maxdigi(milli(compute_data));
+    maxdigi(timespec_to_ms(&init));
+    maxdigi(timespec_to_ms(&mmap_img));
+    maxdigi(timespec_to_ms(&meta));
+    maxdigi(timespec_to_ms(&init_queue));
+    maxdigi(timespec_to_ms(&compute_data));
 
     printf(
         "Timing:\n  init: %*ld\n  mmap: %*ld\n  meta: %*ld\n  qini: %*ld\n  "
         "comp: %*ld\n",
-        ndigits, milli(init), ndigits, milli(mmap_img), ndigits, milli(meta),
-        ndigits, milli(init_queue), ndigits, milli(compute_data));
+        ndigits, timespec_to_ms(&init), ndigits, timespec_to_ms(&mmap_img),
+        ndigits, timespec_to_ms(&meta), ndigits, timespec_to_ms(&init_queue),
+        ndigits, timespec_to_ms(&compute_data));
   }
   return rc;
 }
