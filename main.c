@@ -206,6 +206,10 @@ int main(int argc, const char* argv[]) {
   struct timespec meta;
   struct timespec init_queue;
   struct timespec compute_data;
+  struct timespec baseis;
+  struct timespec initis;
+  struct timespec randomizeis;
+  struct timespec pushis;
 
   clock_gettime(CLOCK_MONOTONIC_RAW, &start);
   frak_args_init(&args);
@@ -290,15 +294,22 @@ int main(int argc, const char* argv[]) {
 
     if (args.randomize) {
       uint32_t* is = calloc(work_count, sizeof(uint32_t));
+      clock_gettime(CLOCK_MONOTONIC_RAW, &baseis);
       for (uint32_t i = 0; i < work_count; i++) {
         is[i] = i;
       }
-      for (uint32_t i = 0; i < work_count; i++) {
-        is[i] = give_me_random(work_count - i);
+      clock_gettime(CLOCK_MONOTONIC_RAW, &initis);
+      for (uint32_t i = work_count; i > 0; i--) {
+        uint32_t j = give_me_random(i);
+        uint32_t tmp = is[j];
+        is[j] = is[i];
+        is[i] = tmp;
       }
+      clock_gettime(CLOCK_MONOTONIC_RAW, &randomizeis);
       for (uint32_t i = 0; i < work_count; i++) {
         wq_push(wq, data + is[i]);
       }
+      clock_gettime(CLOCK_MONOTONIC_RAW, &pushis);
       free(is);
     } else {
       for (uint32_t i = 0; i < work_count; i++) {
@@ -337,6 +348,12 @@ out:
     timespec_minus(&mmap_img, &init);
     timespec_minus(&init, &start);
 
+    if (args.randomize) {
+      timespec_minus(&pushis, &randomizeis);
+      timespec_minus(&randomizeis, &initis);
+      timespec_minus(&initis, &baseis);
+    }
+
 #define max(a, b) ((a) < (b) ? (a) : (b))
 #define maxdigi(x)                               \
   do {                                           \
@@ -352,6 +369,11 @@ out:
     maxdigi(timespec_to_ms(&meta));
     maxdigi(timespec_to_ms(&init_queue));
     maxdigi(timespec_to_ms(&compute_data));
+    if (args.randomize) {
+      maxdigi(timespec_to_ms(&initis));
+      maxdigi(timespec_to_ms(&randomizeis));
+      maxdigi(timespec_to_ms(&pushis));
+    }
 
     printf(
         "Timing:\n  init: %*ld\n  mmap: %*ld\n  meta: %*ld\n  qini: %*ld\n  "
@@ -359,6 +381,11 @@ out:
         ndigits, timespec_to_ms(&init), ndigits, timespec_to_ms(&mmap_img),
         ndigits, timespec_to_ms(&meta), ndigits, timespec_to_ms(&init_queue),
         ndigits, timespec_to_ms(&compute_data));
+    if (args.randomize) {
+      printf("\n  inii: %*ld\n  shfi: %*ld\n  push: %*ld\n", ndigits,
+             timespec_to_ms(&initis), ndigits, timespec_to_ms(&randomizeis),
+             ndigits, timespec_to_ms(&pushis));
+    }
   }
   return rc;
 }
