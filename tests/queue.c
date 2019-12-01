@@ -11,7 +11,7 @@ TEST(Queue) {
   EXPECT_EQ(queue_get_length(q), 0);
   EXPECT_TRUE(queue_is_empty(q));
 
-  queue_push(q, (void*)0x1);
+  EXPECT_TRUE(queue_push(q, (void*)0x1));
   EXPECT_EQ(queue_get_length(q), 1);
   EXPECT_FALSE(queue_is_empty(q));
 
@@ -133,6 +133,62 @@ TEST(QueuePopN) {
 
   EXPECT_EQ(queue_pop_n(q, 10, buffer), 1);
   EXPECT_EQ(buffer[0], (void*)0x9);
+
+  queue_destroy(q);
+}
+
+TEST(QueuePushN) {
+  void* pusher[3];
+  void* buffer[3];
+
+  queue_t q = queue_create(2);
+  pusher[0] = (void*)0x1;
+  pusher[1] = (void*)0x2;
+  EXPECT_EQ(queue_push_n(q, 2, pusher), 2);
+
+  EXPECT_EQ(queue_pop_n(q, 2, buffer), 2);
+  EXPECT_EQ(buffer[0], (void*)0x1);
+  EXPECT_EQ(buffer[1], (void*)0x2);
+
+  pusher[0] = (void*)0x3;
+  pusher[1] = (void*)0x4;
+  EXPECT_EQ(queue_push_n(q, 2, pusher), 2);
+
+  EXPECT_EQ(queue_pop_n(q, 3, buffer), 2);
+  EXPECT_EQ(buffer[0], (void*)0x3);
+  EXPECT_EQ(buffer[1], (void*)0x4);
+
+  pusher[0] = (void*)0x5;
+  EXPECT_EQ(queue_push_n(q, 1, pusher), 1);
+
+  EXPECT_EQ(queue_pop_n(q, 1, buffer), 1);
+  EXPECT_EQ(buffer[0], (void*)0x5);
+
+  pusher[0] = (void*)0x6;
+  pusher[1] = (void*)0x7;
+  pusher[2] = (void*)0x8;
+  EXPECT_EQ(queue_push_n(q, 4, pusher), 3);
+
+  EXPECT_EQ(queue_pop_n(q, 3, buffer), 3);
+  EXPECT_EQ(buffer[0], (void*)0x6);
+  EXPECT_EQ(buffer[1], (void*)0x7);
+  EXPECT_EQ(buffer[2], (void*)0x8);
+
+  pusher[0] = (void*)0x9;
+  pusher[1] = (void*)0xa;
+  EXPECT_EQ(queue_push_n(q, 2, pusher), 2);
+  pusher[0] = (void*)0xb;
+  pusher[1] = (void*)0xc;
+  EXPECT_EQ(queue_push_n(q, 2, pusher), 1);
+
+  EXPECT_EQ(queue_pop_n(q, 3, buffer), 3);
+  EXPECT_EQ(buffer[0], (void*)0x9);
+  EXPECT_EQ(buffer[1], (void*)0xa);
+  EXPECT_EQ(buffer[2], (void*)0xb);
+
+  EXPECT_EQ(queue_push_n(q, 10, pusher), 3);
+  EXPECT_EQ(queue_pop_n(q, 10, buffer), 3);
+  EXPECT_EQ(memcmp(pusher, buffer, sizeof(pusher)), 0);
 
   queue_destroy(q);
 }

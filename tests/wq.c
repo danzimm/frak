@@ -30,9 +30,13 @@ static void _test_wq_internal(bool use_local_cache) {
   wq_t wq =
       wq_create("test", (void*)computer, 0, 32 - __builtin_clz(sizeof(buffer)));
   wq_set_worker_cache_size(wq, use_local_cache ? (uint32_t)-1 : 1);
-  for (unsigned i = 0; i < sizeof(buffer); i++) {
-    wq_push(wq, buffer + i);
+
+  void* q_items[sizeof(buffer) / 2];
+  for (unsigned i = 0; i < sizeof(buffer) / 2; i++) {
+    EXPECT_TRUE(wq_push(wq, buffer + i));
+    q_items[i] = buffer + sizeof(buffer) / 2 + i;
   }
+  EXPECT_EQ(wq_push_n(wq, sizeof(buffer) / 2, q_items), sizeof(buffer) / 2);
 
   clock_gettime(CLOCK_MONOTONIC_RAW, &start);
   wq_start(wq, buffer);

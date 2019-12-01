@@ -15,7 +15,12 @@ queue_t queue_create(uint8_t cap_pow);
 
 void queue_destroy(queue_t q);
 
-void queue_push(queue_t q, void* data);
+unsigned queue_push_n(queue_t q, unsigned n, void* data[]);
+
+static inline bool queue_push(queue_t q, void* x) {
+  void* buffer[1] = {x};
+  return queue_push_n(q, 1, buffer) == 1 ? true : false;
+}
 
 unsigned queue_pop_n(queue_t q, unsigned n, void* results[]);
 

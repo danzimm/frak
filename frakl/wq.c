@@ -44,7 +44,9 @@ void wq_set_worker_cache_size(wq_t wq, uint32_t size) {
 
 const char* wq_get_name(wq_t wq) { return wq->name; }
 
-void wq_push(wq_t wq, void* work) { queue_push(wq->queue, work); }
+unsigned wq_push_n(wq_t wq, unsigned n, void* work[]) {
+  return queue_push_n(wq->queue, n, work);
+}
 
 static void* wq_worker(wq_t wq) {
   queue_t q = wq->queue;
