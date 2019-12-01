@@ -40,17 +40,6 @@ static void fill_random(void* buffer, size_t len) {
 #endif
 }
 
-static uint32_t give_me_random(uint32_t max) {
-#if __APPLE__
-  return arc4random_uniform(max);
-#else
-  // Yeah yeah, this isn't uniform. I did an interview question once
-  // implementing properly uniform random numbers for arbitrary ranges...
-  // The implementation isn't fun...
-  return random() % max;
-#endif
-}
-
 static uint32_t max_iteration = 1000;
 
 // c = x + iy
@@ -288,22 +277,8 @@ int main(int argc, const char* argv[]) {
                         32 - __builtin_clz(work_count));
     wq_set_worker_cache_size(wq, args.worker_cache_size);
 
-    if (args.randomize) {
-      uint32_t* is = calloc(work_count, sizeof(uint32_t));
-      for (uint32_t i = 0; i < work_count; i++) {
-        is[i] = i;
-      }
-      for (uint32_t i = 0; i < work_count; i++) {
-        is[i] = give_me_random(work_count - i);
-      }
-      for (uint32_t i = 0; i < work_count; i++) {
-        wq_push(wq, data + is[i]);
-      }
-      free(is);
-    } else {
-      for (uint32_t i = 0; i < work_count; i++) {
-        wq_push(wq, data + i);
-      }
+    for (uint32_t i = 0; i < work_count; i++) {
+      wq_push(wq, data + i);
     }
     if (args.stats) {
       clock_gettime(CLOCK_MONOTONIC_RAW, &init_queue);
