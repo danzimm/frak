@@ -70,8 +70,8 @@ unsigned queue_push_n(queue_t q, unsigned n, void* data[]) {
   void** data_iter = data;
   unsigned res = 0;
   for (uintptr_t i = head; i != new_head; i = ((i + 1) & cap_mask)) {
+    q->cells[i].data = data ? *data_iter++ : (void*)(uintptr_t)res;
     res += 1;
-    q->cells[i].data = *data_iter++;
   }
   return res;
 }
