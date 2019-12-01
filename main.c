@@ -46,8 +46,25 @@ static void fill_random(void* buffer, size_t len) {
 #define base_random random
 #endif
 
+static uint32_t* s_random_buffer = NULL;
+static uint32_t* s_random_buffer_iter = NULL;
+static uint32_t const* s_random_buffer_end = NULL;
+void init_random_buffer(uint32_t cnt) {
+  uint32_t bcnt = sizeof(uint32_t) * cnt;
+  s_random_buffer = malloc(bcnt);
+  fill_random(s_random_buffer, bcnt);
+  s_random_buffer_iter = s_random_buffer;
+  s_random_buffer_end = s_random_buffer_iter + cnt;
+}
+
 static uint32_t give_me_random(uint32_t max) {
-  return ((uint64_t)base_random() * max) >> 32;
+  uint32_t rnd;
+  if (s_random_buffer_iter != s_random_buffer_end) {
+    rnd = *s_random_buffer_iter++;
+  } else {
+    rnd = base_random();
+  }
+  return ((uint64_t)rnd * max) >> 32;
 }
 
 static uint32_t max_iteration = 1000;
@@ -209,6 +226,7 @@ int main(int argc, const char* argv[]) {
   struct timespec initis;
   struct timespec randomizeis;
   struct timespec pushis;
+  struct timespec fillrand;
 
   clock_gettime(CLOCK_MONOTONIC_RAW, &start);
   frak_args_init(&args);
@@ -302,6 +320,10 @@ int main(int argc, const char* argv[]) {
       if (args.stats) {
         clock_gettime(CLOCK_MONOTONIC_RAW, &initis);
       }
+      init_random_buffer(work_count);
+      if (args.stats) {
+        clock_gettime(CLOCK_MONOTONIC_RAW, &fillrand);
+      }
       for (uint32_t i = work_count; i > 0; i--) {
         uint32_t j = give_me_random(i);
         uint32_t tmp = is[j];
@@ -357,7 +379,8 @@ out:
 
     if (args.randomize) {
       timespec_minus(&pushis, &randomizeis);
-      timespec_minus(&randomizeis, &initis);
+      timespec_minus(&randomizeis, &fillrand);
+      timespec_minus(&fillrand, &initis);
       timespec_minus(&initis, &baseis);
     }
 
@@ -380,6 +403,7 @@ out:
       maxdigi(timespec_to_ms(&initis));
       maxdigi(timespec_to_ms(&randomizeis));
       maxdigi(timespec_to_ms(&pushis));
+      maxdigi(timespec_to_ms(&fillrand));
     }
 
     printf(
@@ -389,9 +413,10 @@ out:
         ndigits, timespec_to_ms(&meta), ndigits, timespec_to_ms(&init_queue),
         ndigits, timespec_to_ms(&compute_data));
     if (args.randomize) {
-      printf("\n  inii: %*ld\n  shfi: %*ld\n  push: %*ld\n", ndigits,
-             timespec_to_ms(&initis), ndigits, timespec_to_ms(&randomizeis),
-             ndigits, timespec_to_ms(&pushis));
+      printf("\n  inii: %*ld\n  shfi: %*ld\n  push: %*ld\n  fill: %*ld\n",
+             ndigits, timespec_to_ms(&initis), ndigits,
+             timespec_to_ms(&randomizeis), ndigits, timespec_to_ms(&pushis),
+             ndigits, timespec_to_ms(&fillrand));
     }
   }
   return rc;
