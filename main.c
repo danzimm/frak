@@ -81,8 +81,8 @@ static void mandlebrot_worker(void** pixels, unsigned n,
   void** iter = pixels;
   void* const* const end = iter + n;
   do {
-    void* pixel = *iter;
-    uint32_t i = (uint32_t)(pixel - ctx->buffer);
+    uint32_t i = (uint32_t)*iter;
+    void* pixel = ctx->buffer + i;
     uint32_t row = i / width;
     uint32_t column = i % width;
     *(uint8_t*)pixel = mandlebrot_pixel(column, row, width, height);
@@ -267,7 +267,6 @@ int main(int argc, const char* argv[]) {
     if (args.stats) {
       clock_gettime(CLOCK_MONOTONIC_RAW, &meta);
     }
-
     struct pixel_worker_ctx ctx = {
         .args = &args,
         .buffer = data,
@@ -276,13 +275,11 @@ int main(int argc, const char* argv[]) {
     wq_t wq = wq_create("frak", (void*)mandlebrot_worker, args.worker_count,
                         32 - __builtin_clz(work_count));
     wq_set_worker_cache_size(wq, args.worker_cache_size);
-
-    for (uint32_t i = 0; i < work_count; i++) {
-      wq_push(wq, data + i);
-    }
+    wq_push_n(wq, work_count, NULL);
     if (args.stats) {
       clock_gettime(CLOCK_MONOTONIC_RAW, &init_queue);
     }
+
     if (!args.no_compute) {
       wq_start(wq, &ctx);
       wq_wait(wq);
