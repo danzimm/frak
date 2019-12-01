@@ -53,8 +53,27 @@ uintptr_t atomic_fetch_inc_and(_Atomic(uintptr_t) * value, uintptr_t mask) {
   return (val - 1) & mask;
 }
 
-void queue_push(queue_t q, void* data) {
-  q->cells[atomic_fetch_inc_and(&q->head, q->cap_mask)].data = data;
+unsigned queue_push_n(queue_t q, unsigned n, void* data[]) {
+  uintptr_t head = atomic_load(&q->head);
+  const uintptr_t tail = atomic_load(&q->tail);
+  const uintptr_t cap_mask = q->cap_mask;
+  const uintptr_t cap = cap_mask + 1;
+  uintptr_t left;
+  uintptr_t new_head;
+  do {
+    left = head >= tail ? cap - head + tail - 1 : tail - head;
+    new_head = (head + (n < left ? n : left)) & cap_mask;
+    if (new_head == head) {
+      return 0;
+    }
+  } while (!atomic_compare_exchange_weak(&q->head, &head, new_head));
+  void** data_iter = data;
+  unsigned res = 0;
+  for (uintptr_t i = head; i != new_head; i = ((i + 1) & cap_mask)) {
+    res += 1;
+    q->cells[i].data = *data_iter++;
+  }
+  return res;
 }
 
 unsigned queue_pop_n(queue_t q, unsigned n, void* results[]) {
