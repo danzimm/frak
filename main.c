@@ -15,6 +15,7 @@
 #endif
 
 #include "frak_args.h"
+#include "frakl/fractal.h"
 #include "frakl/tiff.h"
 #include "frakl/time_utils.h"
 #include "frakl/wq.h"
@@ -38,55 +39,6 @@ static void fill_random(void* buffer, size_t len) {
     iter += len;
   }
 #endif
-}
-
-static uint32_t max_iteration = 1000;
-
-// c = x + iy
-// m_c(z) = z^2 + c
-//        = z_x^2 - z_y^2 + x + i(2z_x * z_y + y)
-static uint8_t mandlebrot_pixel(uint32_t column, uint32_t row, uint32_t width,
-                                uint32_t height) {
-  double x = 4.0 * (double)column / (double)width - 2.0;
-  double y = 4.0 * (double)row / (double)height - 2.0;
-
-  double zx = x;
-  double zy = y;
-  double tmp;
-  double magsq = zx * zx + zy * zy;
-  uint32_t result = 0;
-  const uint32_t max = max_iteration;
-
-  while (magsq <= 4.0 && result != max) {
-    tmp = zx * zx - zy * zy + x;
-    zy = 2 * zx * zy + y;
-    zx = tmp;
-    magsq = zx * zx + zy * zy;
-    result += 1;
-  }
-  return (255 * result) / max_iteration;
-}
-
-struct pixel_worker_ctx {
-  struct frak_args const* const args;
-  void* buffer;
-};
-
-static void mandlebrot_worker(void** pixels, unsigned n,
-                              struct pixel_worker_ctx* ctx) {
-  struct frak_args const* const args = ctx->args;
-
-  const uint32_t width = args->width;
-  const uint32_t height = args->height;
-  void** iter = pixels;
-  void* const* const end = iter + n;
-  do {
-    uint32_t i = (uint32_t)*iter;
-    void* pixel = ctx->buffer + i;
-    uint32_t row = i / width;
-    uint32_t column = i % width;
-    *(uint8_t*)pixel = mandlebrot_pixel(column, row, width, height);
-  } while (++iter != end);
 }
 
 // n-atic:
@@ -188,6 +140,7 @@ int main(int argc, const char* argv[]) {
   struct tiff_spec spec;
   size_t len;
   int o_flags = 0;
+  struct fractal_ctx ctx;
 
   struct timespec start;
   struct timespec init;
@@ -206,7 +159,6 @@ int main(int argc, const char* argv[]) {
     }
     frak_usage(args.print_help ? 0 : 1);
   }
-  max_iteration = args.max_iteration;
 
   tiff_spec_init_from_frak_args(&spec, &args);
   if (args.palette_only) {
@@ -267,10 +219,11 @@ int main(int argc, const char* argv[]) {
     if (args.stats) {
       clock_gettime(CLOCK_MONOTONIC_RAW, &meta);
     }
-    struct pixel_worker_ctx ctx = {
-        .args = &args,
-        .buffer = data,
-    };
+    ctx.width = args.width;
+    ctx.height = args.height;
+    ctx.buffer = data;
+    ctx.max_iteration = args.max_iteration;
+
     const uintptr_t work_count = args.width * args.height;
     wq_t wq = wq_create("frak", (void*)mandlebrot_worker, args.worker_count,
                         work_count);
