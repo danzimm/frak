@@ -277,7 +277,7 @@ static void str_word_chunk(const char** str, char* out, unsigned out_width) {
   unsigned space = 0;
   unsigned slen = strlen(*str);
 
-  if (slen < out_width) {
+  if (slen <= out_width) {
     out_len = slen;
     goto out;
   }
@@ -384,7 +384,7 @@ char* create_usage(const char* cmd, const char* description,
   }
   iter = specs;
 
-  arg_width = get_max_option_width(specs) + 2;
+  arg_width = get_max_option_width(specs) + 1;
   summary_width = 80 - arg_width;
 
   asprintf(&flag_padding, "%-*s", arg_width, "");
