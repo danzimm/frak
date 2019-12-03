@@ -14,4 +14,5 @@ TEST(RoundToNextPowerOfTwo) {
   EXPECT_EQ(round_to_next_power_of_two(32), 32);
   EXPECT_EQ(round_to_next_power_of_two(33), 64);
   EXPECT_EQ(round_to_next_power_of_two(70000), 131072);
+  EXPECT_EQ(round_to_next_power_of_two(2500000001), 0x100000000);
 }
