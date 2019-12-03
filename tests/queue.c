@@ -7,7 +7,8 @@
 #include "tests.h"
 
 TEST(Queue) {
-  queue_t q = queue_create(2);
+  queue_t q = queue_create(3);
+  EXPECT_EQ(queue_get_capacity(q), 3);
   EXPECT_EQ(queue_get_length(q), 0);
   EXPECT_TRUE(queue_is_empty(q));
 
@@ -97,7 +98,7 @@ TEST(Queue) {
 TEST(QueuePopN) {
   void* buffer[3];
 
-  queue_t q = queue_create(2);
+  queue_t q = queue_create(3);
   queue_push(q, (void*)0x1);
   queue_push(q, (void*)0x2);
 
@@ -141,7 +142,7 @@ TEST(QueuePushN) {
   void* pusher[3];
   void* buffer[3];
 
-  queue_t q = queue_create(2);
+  queue_t q = queue_create(3);
   pusher[0] = (void*)0x1;
   pusher[1] = (void*)0x2;
   EXPECT_EQ(queue_push_n(q, 2, pusher), 2);
@@ -208,7 +209,7 @@ static void* queue_popper(queue_t q) {
 }
 
 TEST(QueueMultiThread) {
-  queue_t q = queue_create(17);
+  queue_t q = queue_create(70000);
   pthread_t t[5];
   for (unsigned i = 0; i < 5; i++) {
     EXPECT_EQ(pthread_create(&t[i], NULL, (void*)queue_pusher, q), 0);

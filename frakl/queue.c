@@ -1,6 +1,7 @@
 // Copywrite (c) 2019 Dan Zimmerman
 
 #include "queue.h"
+#include "utils.h"
 
 #include <assert.h>
 #include <stdatomic.h>
@@ -21,11 +22,9 @@ struct queue {
   struct q_cell cells[];
 };
 
-queue_t queue_create(uint8_t cap_pow) {
-  if (cap_pow == 0 || cap_pow > 31) {
-    cap_pow = 16;
-  }
-  size_t cap = 1 << cap_pow;
+queue_t queue_create(uintptr_t max_cap) {
+  // Due to our implementation we need one extra empty cell.
+  const uintptr_t cap = round_to_next_power_of_two(max_cap + 1);
   queue_t res = malloc(sizeof(struct queue) + cap * sizeof(struct q_cell));
   res->cap_mask = cap - 1;
   atomic_init(&res->head, 0);

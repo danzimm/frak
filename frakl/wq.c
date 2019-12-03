@@ -22,8 +22,9 @@ struct wq {
 static size_t get_reasonable_worker_count(void) {
   return 4 * sysconf(_SC_NPROCESSORS_ONLN) / 3;
 }
+
 wq_t wq_create(const char* name, wq_cb_t cb, size_t worker_count,
-               size_t queue_cap_shift) {
+               uintptr_t queue_cap_shift) {
   wq_t res = malloc(sizeof(struct wq));
   res->name = strdup(name);
   res->queue = queue_create(queue_cap_shift);
