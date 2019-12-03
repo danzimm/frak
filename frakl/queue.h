@@ -9,9 +9,7 @@
 struct queue;
 typedef struct queue* queue_t;
 
-// cap_pow is the capacity as specified as a power of 2, i.e. for a capacity of
-// 4 the caller should pass 2.
-queue_t queue_create(uint8_t cap_pow);
+queue_t queue_create(uintptr_t max_cap);
 
 void queue_destroy(queue_t q);
 

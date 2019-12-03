@@ -12,7 +12,7 @@ typedef void (*wq_cb_t)(void** work, unsigned n, void* ctx);
 
 // Pass worker_count = 0 for default
 wq_t wq_create(const char* name, wq_cb_t cb, size_t worker_count,
-               size_t queue_cap_shift);
+               size_t queue_max_cap);
 
 void wq_set_worker_cache_size(wq_t wq, uint32_t size);
 
