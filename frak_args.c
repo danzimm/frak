@@ -198,6 +198,11 @@ static int color_sort(void const* a, void const* b) {
 }
 
 char* frak_args_validate(frak_args_t args) {
+  if (args->width * arg->height >= UINT32_MAX) {
+    return strdup(
+        "Image requested is too large, only images up until 2^32-1 pixels "
+        "large are supported right now");
+  }
   if (args->design == frak_design_default) {
     args->design = frak_design_mandlebrot;
   }

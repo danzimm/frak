@@ -271,7 +271,7 @@ int main(int argc, const char* argv[]) {
         .args = &args,
         .buffer = data,
     };
-    const uint32_t work_count = args.width * args.height;
+    const uintptr_t work_count = args.width * args.height;
     wq_t wq = wq_create("frak", (void*)mandlebrot_worker, args.worker_count,
                         work_count);
     wq_set_worker_cache_size(wq, args.worker_cache_size);
