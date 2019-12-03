@@ -19,6 +19,7 @@ asan
 lsan
 tsan
 msan
+ubsan
 
 ### CMake Patch ###
 # External projects
