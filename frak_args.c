@@ -162,6 +162,10 @@ struct arg_spec const* const frak_arg_specs = (struct arg_spec[]){
      .offset = offsetof(struct frak_args, no_compute),
      .help = "Don't actually compute the pixels for the output image. Useful"
              " for benchmarking"},
+    {.flag = "--center",
+     .parser = tuple_parser,
+     .offset = offsetof(struct frak_args, center),
+     .help = "Specify the center of the fractal in x,y. Defaults to 0,0"},
     {.flag = NULL},
 };
 
@@ -181,6 +185,8 @@ void frak_args_init(frak_args_t args) {
   args->worker_cache_size = 0;
   args->stats = false;
   args->no_compute = false;
+  args->center[0] = 0;
+  args->center[1] = 0;
 }
 
 static int color_sort(void const* a, void const* b) {
