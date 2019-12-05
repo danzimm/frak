@@ -8,13 +8,13 @@
 static uint8_t mandlebrot_pixel(uint32_t column, uint32_t row, uint32_t width,
                                 uint32_t height, uint32_t max, double ftop,
                                 double fleft, double fwidth, double fheight) {
-  double x = fwidth * (double)column / (double)width + fleft;
-  double y = fheight * (double)row / (double)height + ftop;
+  long double x = fwidth * (long double)column / (long double)width + fleft;
+  long double y = fheight * (long double)row / (long double)height + ftop;
 
-  double zx = x;
-  double zy = y;
-  double tmp;
-  double magsq = zx * zx + zy * zy;
+  long double zx = x;
+  long double zy = y;
+  long double tmp;
+  long double magsq = zx * zx + zy * zy;
   uint32_t result = 0;
 
   while (magsq <= 4.0 && result != max) {
