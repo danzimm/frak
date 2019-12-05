@@ -285,6 +285,170 @@ TEST(ArgsEnum) {
   free(err);
 }
 
+struct tuple_ctx {
+  // Padding just to force extra padding for alignment
+  uint8_t padding;
+  long lngs[3];
+  // Padding just to force extra padding for alignment
+  uint8_t padding2;
+  double dbls[2];
+  // Padding just to force extra padding for alignment
+  uint8_t padding3;
+};
+
+TEST(ArgsTuple) {
+  const struct arg_spec specs[] = {
+      {
+          .flag = "--noarg",
+          .parser = tuple_parser,
+          .offset = 0,
+      },
+      {
+          .flag = "--arg-noctx",
+          .takes_arg = true,
+          .parser = tuple_parser,
+          .offset = 0,
+      },
+      {
+          .flag = "--twodbl",
+          .takes_arg = true,
+          .parser = tuple_parser,
+          .offset = offsetof(struct tuple_ctx, dbls),
+          .parser_ctx = ((union tuple_spec){
+                             .count = 2,
+                             .is_double = true,
+                         })
+                            .ptr,
+      },
+      {
+          .flag = "--threelng",
+          .takes_arg = true,
+          .parser = tuple_parser,
+          .offset = offsetof(struct tuple_ctx, lngs),
+          .parser_ctx = ((union tuple_spec){
+                             .count = 3,
+                             .is_double = false,
+                         })
+                            .ptr,
+      },
+      {.flag = NULL},
+  };
+
+  struct tuple_ctx ctx;
+  bzero(&ctx, sizeof(ctx));
+
+  char* err =
+      parse_args(1, (const char*[]){"--noarg"}, specs, NULL, NULL, &ctx);
+  EXPECT_STREQ(err,
+               "Unable to parse '--noarg': programmer error, tuple options "
+               "require an argument");
+  free(err);
+
+  err = parse_args(2, (const char*[]){"--arg-noctx", "arg"}, specs, NULL, NULL,
+                   &ctx);
+  EXPECT_STREQ(err,
+               "Unable to parse '--arg-noctx arg': programmer error, tuple "
+               "options require a context (tuple_spec)");
+  free(err);
+
+  bzero(&ctx, sizeof(ctx));
+  EXPECT_STREQ(NULL, parse_args(2, (const char*[]){"--twodbl", "1.0,2.0"},
+                                specs, NULL, NULL, &ctx));
+  EXPECT_EQ(ctx.dbls[0], 1.0);
+  EXPECT_EQ(ctx.dbls[1], 2.0);
+
+  bzero(&ctx, sizeof(ctx));
+  EXPECT_STREQ(NULL, parse_args(2, (const char*[]){"--twodbl", "0.0,-2.2"},
+                                specs, NULL, NULL, &ctx));
+  EXPECT_EQ(ctx.dbls[0], 0.0);
+  EXPECT_EQ(ctx.dbls[1], -2.2);
+
+  bzero(&ctx, sizeof(ctx));
+  EXPECT_STREQ(NULL, parse_args(2, (const char*[]){"--twodbl", "-3,4"}, specs,
+                                NULL, NULL, &ctx));
+  EXPECT_EQ(ctx.dbls[0], -3.0);
+  EXPECT_EQ(ctx.dbls[1], 4.0);
+
+  bzero(&ctx, sizeof(ctx));
+  EXPECT_STREQ(NULL, parse_args(2, (const char*[]){"--twodbl", "3e5,4"}, specs,
+                                NULL, NULL, &ctx));
+  EXPECT_EQ(ctx.dbls[0], 3e5);
+  EXPECT_EQ(ctx.dbls[1], 4.0);
+
+  bzero(&ctx, sizeof(ctx));
+  EXPECT_STREQ(NULL, parse_args(2, (const char*[]){"--threelng", "3,4,5"},
+                                specs, NULL, NULL, &ctx));
+  EXPECT_EQ(ctx.lngs[0], 3);
+  EXPECT_EQ(ctx.lngs[1], 4);
+  EXPECT_EQ(ctx.lngs[2], 5);
+
+  bzero(&ctx, sizeof(ctx));
+  EXPECT_STREQ(NULL, parse_args(2, (const char*[]){"--threelng", "-3,0,255"},
+                                specs, NULL, NULL, &ctx));
+  EXPECT_EQ(ctx.lngs[0], -3);
+  EXPECT_EQ(ctx.lngs[1], 0);
+  EXPECT_EQ(ctx.lngs[2], 255);
+
+  err = parse_args(2, (const char*[]){"--threelng", "3.0,4,5"}, specs, NULL,
+                   NULL, &ctx);
+  EXPECT_STREQ(
+      err, "Unable to parse '--threelng 3.0,4,5': expected long, error at '.'");
+  free(err);
+
+  err = parse_args(2, (const char*[]){"--twodbl", "3a,4"}, specs, NULL, NULL,
+                   &ctx);
+  EXPECT_STREQ(
+      err, "Unable to parse '--twodbl 3a,4': expected double, error at 'a'");
+  free(err);
+
+  err = parse_args(2, (const char*[]){"--twodbl", "3a,4"}, specs, NULL, NULL,
+                   &ctx);
+  EXPECT_STREQ(
+      err, "Unable to parse '--twodbl 3a,4': expected double, error at 'a'");
+  free(err);
+
+  err =
+      parse_args(2, (const char*[]){"--twodbl", "3,"}, specs, NULL, NULL, &ctx);
+  EXPECT_STREQ(err,
+               "Unable to parse '--twodbl 3,': expected non empty tuple item "
+               "at index 1");
+  free(err);
+
+  err = parse_args(2, (const char*[]){"--threelng", "3,,5"}, specs, NULL, NULL,
+                   &ctx);
+  EXPECT_STREQ(err,
+               "Unable to parse '--threelng 3,,5': expected non empty tuple "
+               "item at index 1");
+  free(err);
+
+  err = parse_args(2, (const char*[]){"--threelng", ",1,5"}, specs, NULL, NULL,
+                   &ctx);
+  EXPECT_STREQ(err,
+               "Unable to parse '--threelng ,1,5': expected non empty tuple "
+               "item at index 0");
+  free(err);
+
+  err = parse_args(2, (const char*[]){"--threelng", "1,5"}, specs, NULL, NULL,
+                   &ctx);
+  EXPECT_STREQ(err, "Unable to parse '--threelng 1,5': expected 3 longs");
+  free(err);
+
+  err = parse_args(2, (const char*[]){"--threelng", "1,5,9,10"}, specs, NULL,
+                   NULL, &ctx);
+  EXPECT_STREQ(err, "Unable to parse '--threelng 1,5,9,10': expected 3 longs");
+  free(err);
+
+  err = parse_args(2, (const char*[]){"--twodbl", "1,5,5"}, specs, NULL, NULL,
+                   &ctx);
+  EXPECT_STREQ(err, "Unable to parse '--twodbl 1,5,5': expected 2 doubles");
+  free(err);
+
+  err = parse_args(2, (const char*[]){"--twodbl", "1.0"}, specs, NULL, NULL,
+                   &ctx);
+  EXPECT_STREQ(err, "Unable to parse '--twodbl 1.0': expected 2 doubles");
+  free(err);
+}
+
 TEST(ArgsExpectedArgs) {
   const char* ctx[2];
   const struct arg_spec specs[] = {

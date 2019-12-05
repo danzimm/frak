@@ -33,6 +33,16 @@ typedef struct arg_enum_opt {
 // ctx is a arg_enum_opt_t, ending with a 0 entry
 char* enum_parser(const char* arg, void* slot, void* ctx);
 
+union tuple_spec {
+  struct {
+    uint16_t count;
+    bool is_double;
+  };
+  void* ptr;
+};
+
+char* tuple_parser(const char* arg, void* slot, void* ctx);
+
 char* parse_args(int argc, const char* argv[],
                  struct arg_spec const* const specs, void (*initializer)(void*),
                  char* (*validator)(void*), void* ctx);
