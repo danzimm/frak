@@ -33,6 +33,11 @@ void fail(const char* file, int line, const char* fmt, ...);
 #define EXPECT_EQ(x, y) EXPECT_((x) == (y), #x " != " #y)
 #define EXPECT_TRUE(x) EXPECT_(!!(x), "!" #x)
 #define EXPECT_FALSE(x) EXPECT_(!(x), #x)
-#define EXPECT_STREQ(x, y)                                           \
-  EXPECT_((x == NULL && y == NULL) || (x && y && strcmp(x, y) == 0), \
-          #x " != " #y)
+#define EXPECT_STREQ(x, y)                                     \
+  do {                                                         \
+    const char* _xtmp = (x);                                   \
+    const char* _ytmp = (y);                                   \
+    EXPECT_((_xtmp == NULL && _ytmp == NULL) ||                \
+                (_xtmp && _ytmp && strcmp(_xtmp, _ytmp) == 0), \
+            "'%s' != '%s' (" #x " != " #y ")", _xtmp, _ytmp);  \
+  } while (0)
