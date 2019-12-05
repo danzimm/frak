@@ -225,8 +225,8 @@ int main(int argc, const char* argv[]) {
     ctx.max_iteration = args.max_iteration;
 
     const uintptr_t work_count = args.width * args.height;
-    wq_t wq = wq_create("frak", (void*)mandlebrot_worker, args.worker_count,
-                        work_count);
+    wq_t wq =
+        wq_create("frak", (void*)fractal_worker, args.worker_count, work_count);
     wq_set_worker_cache_size(wq, args.worker_cache_size);
     wq_push_n(wq, work_count, NULL);
     if (args.stats) {
