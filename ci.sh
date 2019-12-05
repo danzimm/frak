@@ -24,6 +24,11 @@ if [ -n "$FRAK_SAN_TYPE" ]; then
   run_tests "$(get_build_dir "$FRAK_SAN_TYPE")" "-DFRAK_SAN_TYPE=$FRAK_SAN_TYPE"
 else
   run_tests build
-  run_tests asan -DFRAK_SAN_TYPE=address
-  run_tests tsan -DFRAK_SAN_TYPE=thread
+  if [ "$1" = "all" ]; then
+    run_tests asan -DFRAK_SAN_TYPE=address
+    run_tests tsan -DFRAK_SAN_TYPE=thread
+    if [ "$(uname)" = "Linux" ]; then
+      run_tests msan -DFRAK_SAN_TYPE=memory
+    fi
+  fi
 fi
