@@ -32,42 +32,31 @@ static struct arg_enum_opt design_enum_opts[] = {
     {.option = NULL, .value = 0},
 };
 
-static bool cp_num_bnd(const char** iter, char* buf, unsigned cnt, char c) {
-  const char* const base = *iter;
-  const char* liter = base;
-  if (*liter == '\0') {
-    return false;
-  }
-  while ((liter - base) <= cnt && *liter != '\0' && *liter != c) {
-    char x = *liter;
-    if (x < '0' || x > '9') {
-      return false;
-    }
-    *buf = x;
-    liter++;
-    buf++;
-  }
-  if ((liter - base) > cnt) {
-    return false;
-  }
-  liter++;
-  buf[0] = '\0';
-  *iter = liter;
-  return true;
-}
-
 static char* color_parser(const char* arg, void* slot, void* ctx) {
   (void)ctx;
-  const char* iter = arg;
-  char index[4];
-  char red[4];
-  char green[4];
-  char blue[4];
-  bool success =
-      cp_num_bnd(&iter, index, 3, ',') && cp_num_bnd(&iter, red, 3, ',') &&
-      cp_num_bnd(&iter, green, 3, ',') && cp_num_bnd(&iter, blue, 3, ',');
-  if (!success) {
-    return strdup("bad color, expected i,r,g,b");
+
+  long irgb[4];
+  struct tuple_spec spec = {
+      .is_double = false,
+      .count = 4,
+  };
+  char* err = tuple_parser(arg, irgb, &spec);
+  if (err) {
+    goto out;
+  }
+
+  static const char* element_desc[] = {"index", "red", "blue", "green"};
+  for (unsigned i = 0; i < 4; i++) {
+    if (irgb[i] < 0) {
+      asprintf(&err, "the %s component must be non-negative, was %ld",
+               element_desc[i], irgb[i]);
+      goto out;
+    }
+    if (irgb[i] > 255) {
+      asprintf(&err, "the %s component cannot be bigger than 255, was %ld",
+               element_desc[i], irgb[i]);
+      goto out;
+    }
   }
 
   struct frak_colors* colors = *(struct frak_colors**)slot;
@@ -79,14 +68,21 @@ static char* color_parser(const char* arg, void* slot, void* ctx) {
   colors = realloc(colors, sizeof(struct frak_colors) +
                                sizeof(struct frak_color) * (++colors->count));
   struct frak_color* color = &colors->colors[colors->count - 1];
-  color->i = atoi(index);
-  color->red = atoi(red);
-  color->green = atoi(green);
-  color->blue = atoi(blue);
+  color->i = irgb[0];
+  color->red = irgb[1];
+  color->green = irgb[2];
+  color->blue = irgb[3];
 
   *(struct frak_colors**)slot = colors;
-  return NULL;
+
+out:
+  return err;
 }
+
+const struct tuple_spec center_tuple_spec = {
+    .count = 2,
+    .is_double = true,
+};
 
 struct arg_spec const* const frak_arg_specs = (struct arg_spec[]){
     {.flag = "--width",
@@ -170,6 +166,19 @@ struct arg_spec const* const frak_arg_specs = (struct arg_spec[]){
      .offset = offsetof(struct frak_args, no_compute),
      .help = "Don't actually compute the pixels for the output image. Useful"
              " for benchmarking"},
+    {.flag = "--center",
+     .takes_arg = true,
+     .parser = tuple_parser,
+     .parser_ctx = (void*)&center_tuple_spec,
+     .offset = offsetof(struct frak_args, center),
+     .help = "Specify the center of the fractal in x,y. Defaults to 0,0"},
+    {.flag = "--fwidth",
+     .takes_arg = true,
+     .parser = pdbl_parser,
+     .offset = offsetof(struct frak_args, fwidth),
+     .help = "Specify the width of the fractal in the fractal's coordinate"
+             " system. The height will automatically be calculated based on the"
+             " aspect ratio of the image. Defaults to 4"},
     {.flag = NULL},
 };
 
@@ -189,6 +198,9 @@ void frak_args_init(frak_args_t args) {
   args->worker_cache_size = 0;
   args->stats = false;
   args->no_compute = false;
+  args->center[0] = 0;
+  args->center[1] = 0;
+  args->fwidth = 4;
 }
 
 static int color_sort(void const* a, void const* b) {

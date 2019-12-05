@@ -136,6 +136,103 @@ char* enum_parser(const char* arg, void* slot, void* ctx) {
   return strconcat_enum_opts(strdup("expected one of "), ctx);
 }
 
+static void cp_num(const char** in_iter, char** out) {
+  const char* const base = *in_iter;
+  const char* iter = base;
+  while (*iter != '\0' && *iter != ',') {
+    iter++;
+  }
+  unsigned len = iter - base;
+  if (*iter == ',') {
+    iter += 1;
+  }
+  *in_iter = iter;
+  char* res = malloc(len + 1);
+  memcpy(res, base, len);
+  res[len] = '\0';
+  *out = res;
+}
+
+union value_holder {
+  double dbl;
+  long lng;
+};
+
+static union value_holder strtovh(const char* str, char** endptr, bool dbl) {
+  if (dbl) {
+    return (union value_holder){.dbl = strtod(str, endptr)};
+  } else {
+    return (union value_holder){.lng = strtol(str, endptr, 0)};
+  }
+}
+
+static void bind_value_holder(void** io_slot, union value_holder vh, bool dbl) {
+  void* slot = *io_slot;
+  if (dbl) {
+    *(double*)slot = vh.dbl;
+    slot += sizeof(double);
+  } else {
+    *(long*)slot = vh.lng;
+    slot += sizeof(long);
+  }
+  *io_slot = slot;
+}
+
+char* tuple_parser(const char* arg, void* slot, void* ctx) {
+  if (!arg) {
+    return strdup("programmer error, tuple options require an argument");
+  }
+  if (!ctx) {
+    return strdup(
+        "programmer error, tuple options require a context (tuple_spec)");
+  }
+
+  const struct tuple_spec* spec = ctx;
+  const uint16_t count = spec->count;
+  const bool is_double = spec->is_double;
+  char* res = NULL;
+  char* num_buf = NULL;
+  uint16_t i;
+
+  for (i = 0; i < count && res == NULL; i++) {
+    if (*arg == '\0') {
+      break;
+    }
+
+    cp_num(&arg, &num_buf);
+    if (*num_buf == '\0' || (*arg == '\0' && arg[-1] == ',')) {
+      asprintf(&res, "expected non empty tuple item at index %d",
+               i + (*num_buf == '\0' ? 0 : 1));
+      goto loop_out;
+    }
+
+    char* tmp;
+    union value_holder vh = strtovh(num_buf, &tmp, is_double);
+    if (*tmp != '\0') {
+      asprintf(&res, "expected %s, error at '%c'",
+               is_double ? "double" : "long", *tmp);
+      goto loop_out;
+    } else {
+      bind_value_holder(&slot, vh, is_double);
+    }
+    free(num_buf);
+  }
+
+  if (i != count || *arg != '\0') {
+    asprintf(&res, "expected %d %s%s", count, is_double ? "double" : "long",
+             count != 1 ? "s" : "");
+  }
+
+out:
+  return res;
+
+loop_out:
+  if (num_buf) {
+    free(num_buf);
+  }
+  goto out;
+}
+
 static unsigned get_specs_len(struct arg_spec const* const specs) {
   struct arg_spec const* iter = specs;
   while (iter && iter->flag) iter++;

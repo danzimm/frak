@@ -47,6 +47,8 @@ typedef struct frak_args {
   uint32_t worker_cache_size;
   bool stats;
   bool no_compute;
+  double center[2];
+  double fwidth;
 } * frak_args_t;
 
 extern struct arg_spec const* const frak_arg_specs;

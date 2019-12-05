@@ -5,6 +5,7 @@
 #include <assert.h>
 #include <frakl/time_utils.h>
 #include <setjmp.h>
+#include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -24,7 +25,7 @@ struct test_list {
 };
 
 typedef struct test_failure {
-  const char* check;
+  char* check;
   const char* file;
   int line;
 } * test_failure_t;
@@ -70,7 +71,7 @@ bool run_tests(const char* filter) {
     if (filter && strcmp(filter, iter->name) != 0) {
       continue;
     }
-    g_failure.check = iter->name;
+    g_failure.check = strdup(iter->name);
     g_failure.file = iter->file;
     g_failure.line = iter->line;
     volatile bool success;
@@ -89,16 +90,28 @@ bool run_tests(const char* filter) {
     if (!success || iter->expect_fail) {
       printf(": %s at %s:%d\n", g_failure.check, g_failure.file,
              g_failure.line);
+      free(g_failure.check);
+      g_failure.check = NULL;
     } else {
       puts("");
+      if (g_failure.check != NULL) {
+        free(g_failure.check);
+        g_failure.check = NULL;
+      }
     }
     any_fail = any_fail || !success;
   } while (++iter != end);
   return !any_fail;
 }
 
-void fail(const char* check, const char* file, int line) {
-  g_failure.check = check;
+void fail(const char* file, int line, const char* fmt, ...) {
+  if (g_failure.check != NULL) {
+    free(g_failure.check);
+  }
+  va_list args;
+  va_start(args, fmt);
+  vasprintf(&g_failure.check, fmt, args);
+  va_end(args);
   g_failure.file = file;
   g_failure.line = line;
   longjmp(g_jmp_env, 1);

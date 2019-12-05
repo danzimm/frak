@@ -3,6 +3,7 @@
 #pragma once
 
 #include <stdbool.h>
+#include <stdint.h>
 #include <stdlib.h>
 
 struct arg_spec;
@@ -32,6 +33,13 @@ typedef struct arg_enum_opt {
 
 // ctx is a arg_enum_opt_t, ending with a 0 entry
 char* enum_parser(const char* arg, void* slot, void* ctx);
+
+struct tuple_spec {
+  uint16_t count;
+  bool is_double;
+};
+
+char* tuple_parser(const char* arg, void* slot, void* ctx);
 
 char* parse_args(int argc, const char* argv[],
                  struct arg_spec const* const specs, void (*initializer)(void*),
