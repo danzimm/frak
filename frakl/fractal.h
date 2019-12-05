@@ -8,6 +8,10 @@ struct fractal_ctx {
   uint32_t width;
   uint32_t height;
   uint32_t max_iteration;
+  double fwidth;
+  double fheight;
+  double ftop;
+  double fleft;
   void* buffer;
 };
 

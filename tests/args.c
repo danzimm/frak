@@ -297,6 +297,14 @@ struct tuple_ctx {
 };
 
 TEST(ArgsTuple) {
+  struct tuple_spec dbl_spec = {
+      .count = 2,
+      .is_double = true,
+  };
+  struct tuple_spec lng_spec = {
+      .count = 3,
+      .is_double = false,
+  };
   const struct arg_spec specs[] = {
       {
           .flag = "--noarg",
@@ -314,22 +322,14 @@ TEST(ArgsTuple) {
           .takes_arg = true,
           .parser = tuple_parser,
           .offset = offsetof(struct tuple_ctx, dbls),
-          .parser_ctx = ((union tuple_spec){
-                             .count = 2,
-                             .is_double = true,
-                         })
-                            .ptr,
+          .parser_ctx = &dbl_spec,
       },
       {
           .flag = "--threelng",
           .takes_arg = true,
           .parser = tuple_parser,
           .offset = offsetof(struct tuple_ctx, lngs),
-          .parser_ctx = ((union tuple_spec){
-                             .count = 3,
-                             .is_double = false,
-                         })
-                            .ptr,
+          .parser_ctx = &lng_spec,
       },
       {.flag = NULL},
   };

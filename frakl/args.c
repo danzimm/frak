@@ -187,11 +187,9 @@ char* tuple_parser(const char* arg, void* slot, void* ctx) {
         "programmer error, tuple options require a context (tuple_spec)");
   }
 
-  const union tuple_spec spec = (union tuple_spec){
-      .ptr = ctx,
-  };
-  const uint16_t count = spec.count;
-  const bool is_double = spec.is_double;
+  const struct tuple_spec* spec = ctx;
+  const uint16_t count = spec->count;
+  const bool is_double = spec->is_double;
   char* res = NULL;
   char* num_buf = NULL;
   uint16_t i;
@@ -221,8 +219,8 @@ char* tuple_parser(const char* arg, void* slot, void* ctx) {
   }
 
   if (i != count || *arg != '\0') {
-    asprintf(&res, "expected %d %s%s", count,
-             spec.is_double ? "double" : "long", count != 1 ? "s" : "");
+    asprintf(&res, "expected %d %s%s", count, is_double ? "double" : "long",
+             count != 1 ? "s" : "");
   }
 
 out:

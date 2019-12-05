@@ -36,12 +36,11 @@ static char* color_parser(const char* arg, void* slot, void* ctx) {
   (void)ctx;
 
   long irgb[4];
-  char* err = tuple_parser(arg, irgb,
-                           (union tuple_spec){
-                               .is_double = false,
-                               .count = 4,
-                           }
-                               .ptr);
+  struct tuple_spec spec = {
+      .is_double = false,
+      .count = 4,
+  };
+  char* err = tuple_parser(arg, irgb, &spec);
   if (err) {
     goto out;
   }
@@ -79,6 +78,11 @@ static char* color_parser(const char* arg, void* slot, void* ctx) {
 out:
   return err;
 }
+
+const struct tuple_spec center_tuple_spec = {
+    .count = 2,
+    .is_double = true,
+};
 
 struct arg_spec const* const frak_arg_specs = (struct arg_spec[]){
     {.flag = "--width",
@@ -163,10 +167,13 @@ struct arg_spec const* const frak_arg_specs = (struct arg_spec[]){
      .help = "Don't actually compute the pixels for the output image. Useful"
              " for benchmarking"},
     {.flag = "--center",
+     .takes_arg = true,
      .parser = tuple_parser,
+     .parser_ctx = (void*)&center_tuple_spec,
      .offset = offsetof(struct frak_args, center),
      .help = "Specify the center of the fractal in x,y. Defaults to 0,0"},
     {.flag = "--fwidth",
+     .takes_arg = true,
      .parser = pdbl_parser,
      .offset = offsetof(struct frak_args, fwidth),
      .help = "Specify the width of the fractal in the fractal's coordinate"

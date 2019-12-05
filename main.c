@@ -221,6 +221,10 @@ int main(int argc, const char* argv[]) {
     }
     ctx.width = args.width;
     ctx.height = args.height;
+    ctx.fwidth = args.fwidth;
+    ctx.fheight = args.fwidth * (double)args.height / (double)args.width;
+    ctx.fleft = args.center[0] - ctx.fwidth / 2.0;
+    ctx.ftop = args.center[1] - ctx.fheight / 2.0;
     ctx.buffer = data;
     ctx.max_iteration = args.max_iteration;
 
