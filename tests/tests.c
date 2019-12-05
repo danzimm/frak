@@ -94,6 +94,10 @@ bool run_tests(const char* filter) {
       g_failure.check = NULL;
     } else {
       puts("");
+      if (g_failure.check != NULL) {
+        free(g_failure.check);
+        g_failure.check = NULL;
+      }
     }
     any_fail = any_fail || !success;
   } while (++iter != end);
@@ -101,6 +105,9 @@ bool run_tests(const char* filter) {
 }
 
 void fail(const char* file, int line, const char* fmt, ...) {
+  if (g_failure.check != NULL) {
+    free(g_failure.check);
+  }
   va_list args;
   va_start(args, fmt);
   vasprintf(&g_failure.check, fmt, args);
