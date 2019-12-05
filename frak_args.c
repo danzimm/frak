@@ -32,42 +32,32 @@ static struct arg_enum_opt design_enum_opts[] = {
     {.option = NULL, .value = 0},
 };
 
-static bool cp_num_bnd(const char** iter, char* buf, unsigned cnt, char c) {
-  const char* const base = *iter;
-  const char* liter = base;
-  if (*liter == '\0') {
-    return false;
-  }
-  while ((liter - base) <= cnt && *liter != '\0' && *liter != c) {
-    char x = *liter;
-    if (x < '0' || x > '9') {
-      return false;
-    }
-    *buf = x;
-    liter++;
-    buf++;
-  }
-  if ((liter - base) > cnt) {
-    return false;
-  }
-  liter++;
-  buf[0] = '\0';
-  *iter = liter;
-  return true;
-}
-
 static char* color_parser(const char* arg, void* slot, void* ctx) {
   (void)ctx;
-  const char* iter = arg;
-  char index[4];
-  char red[4];
-  char green[4];
-  char blue[4];
-  bool success =
-      cp_num_bnd(&iter, index, 3, ',') && cp_num_bnd(&iter, red, 3, ',') &&
-      cp_num_bnd(&iter, green, 3, ',') && cp_num_bnd(&iter, blue, 3, ',');
-  if (!success) {
-    return strdup("bad color, expected i,r,g,b");
+
+  long irgb[4];
+  char* err = tuple_parser(arg, irgb,
+                           (union tuple_spec){
+                               .is_double = false,
+                               .count = 4,
+                           }
+                               .ptr);
+  if (err) {
+    goto out;
+  }
+
+  static const char* element_desc[] = {"index", "red", "blue", "green"};
+  for (unsigned i = 0; i < 4; i++) {
+    if (irgb[i] < 0) {
+      asprintf(&err, "the %s component must be non-negative, was %ld",
+               element_desc[i], irgb[i]);
+      goto out;
+    }
+    if (irgb[i] > 255) {
+      asprintf(&err, "the %s component cannot be bigger than 255, was %ld",
+               element_desc[i], irgb[i]);
+      goto out;
+    }
   }
 
   struct frak_colors* colors = *(struct frak_colors**)slot;
@@ -79,13 +69,15 @@ static char* color_parser(const char* arg, void* slot, void* ctx) {
   colors = realloc(colors, sizeof(struct frak_colors) +
                                sizeof(struct frak_color) * (++colors->count));
   struct frak_color* color = &colors->colors[colors->count - 1];
-  color->i = atoi(index);
-  color->red = atoi(red);
-  color->green = atoi(green);
-  color->blue = atoi(blue);
+  color->i = irgb[0];
+  color->red = irgb[1];
+  color->green = irgb[2];
+  color->blue = irgb[3];
 
   *(struct frak_colors**)slot = colors;
-  return NULL;
+
+out:
+  return err;
 }
 
 struct arg_spec const* const frak_arg_specs = (struct arg_spec[]){
