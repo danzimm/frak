@@ -166,6 +166,12 @@ struct arg_spec const* const frak_arg_specs = (struct arg_spec[]){
      .parser = tuple_parser,
      .offset = offsetof(struct frak_args, center),
      .help = "Specify the center of the fractal in x,y. Defaults to 0,0"},
+    {.flag = "--fwidth",
+     .parser = pdbl_parser,
+     .offset = offsetof(struct frak_args, fwidth),
+     .help = "Specify the width of the fractal in the fractal's coordinate"
+             " system. The height will automatically be calculated based on the"
+             " aspect ratio of the image. Defaults to 4"},
     {.flag = NULL},
 };
 
@@ -187,6 +193,7 @@ void frak_args_init(frak_args_t args) {
   args->no_compute = false;
   args->center[0] = 0;
   args->center[1] = 0;
+  args->fwidth = 4;
 }
 
 static int color_sort(void const* a, void const* b) {
